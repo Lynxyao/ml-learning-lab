@@ -1,0 +1,1707 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Interactive ML Learning Lab</title>
+    <link rel="stylesheet" href="styles.css?v=20260704m5" />
+  </head>
+  <body>
+    <aside class="sidebar" aria-label="Learning lab navigation">
+      <div class="brand">
+        <span class="brand-mark">ML</span>
+        <div>
+          <strong>ML Learning Lab</strong>
+          <span>Choose · train · test · reflect</span>
+        </div>
+      </div>
+
+      <nav class="module-nav" aria-label="Lessons">
+        <button class="nav-button active" data-target="home">Start</button>
+        <button class="nav-button" data-target="wfm">Module 1 · Images</button>
+        <button class="nav-button" data-target="ecg">Module 2 · Signals</button>
+        <button class="nav-button" data-target="motion">Module 3 · Motion</button>
+        <button class="nav-button" data-target="resistance">Module 4 - Sensors</button>
+        <button class="nav-button" data-target="framework">Module Framework</button>
+        <button class="nav-button" data-target="references">References</button>
+        <button class="nav-button" data-target="notebook">My Notes</button>
+      </nav>
+
+      <div class="progress-panel">
+        <span class="panel-label">Student goal</span>
+        <strong>Finish one ML workflow</strong>
+        <p>Explore saved experiments online. Run realtime training only in local lab mode.</p>
+      </div>
+    </aside>
+
+    <main class="app-shell">
+      <section class="view active" id="home" aria-labelledby="home-title">
+        <div class="section-kicker">Student learning space</div>
+        <div class="hero-grid">
+          <div class="hero-copy">
+            <h1 id="home-title">Learn machine learning by running guided biomedical experiments</h1>
+            <p>
+              Pick a real case study, choose the model workflow, inspect the data, run a training
+              simulation, test the model, and write down what the metrics actually mean.
+            </p>
+            <div class="hero-actions">
+              <button class="primary-action" data-target="wfm">Try Image-to-Image</button>
+              <button class="secondary-action" data-target="ecg">Try ECG Classification</button>
+              <button class="secondary-action" data-target="motion">Try Motion Analysis</button>
+              <button class="secondary-action" data-target="resistance">Try Sensor Inversion</button>
+            </div>
+          </div>
+
+          <div class="learning-path" aria-label="Learning workflow">
+            <div><span>1</span><strong>Choose</strong><p>Select a module and learning question.</p></div>
+            <div><span>2</span><strong>Prepare</strong><p>Inspect data type, labels, and split.</p></div>
+            <div><span>3</span><strong>Train</strong><p>Set model options and watch training behavior.</p></div>
+            <div><span>4</span><strong>Test</strong><p>Evaluate unseen examples and compare metrics.</p></div>
+            <div><span>5</span><strong>Quiz</strong><p>Check concepts, metrics, and failure modes.</p></div>
+            <div><span>6</span><strong>Project</strong><p>Modify code, test settings, and write a mini-report.</p></div>
+          </div>
+        </div>
+
+        <div class="choice-grid" aria-label="Available modules">
+          <article class="choice-card">
+            <span>Module 1</span>
+            <h2>Image-to-Image Learning</h2>
+            <p>Use paired WFM images to learn why a conditional GAN needs both a generator and discriminator.</p>
+            <button class="secondary-action" data-target="wfm">Start module</button>
+          </article>
+          <article class="choice-card">
+            <span>Module 2</span>
+            <h2>Time-Series Classification</h2>
+            <p>Use ECG beat segments to learn 1D CNNs, class imbalance, and accuracy vs macro-F1.</p>
+            <button class="secondary-action" data-target="ecg">Start module</button>
+          </article>
+          <article class="choice-card">
+            <span>Module 3 prototype</span>
+            <h2>Human Motion Analysis</h2>
+            <p>Use public fall/gait data and Holomotion-style features to learn sequence modeling and real-device validation.</p>
+            <button class="secondary-action" data-target="motion">Start module</button>
+          </article>
+          <article class="choice-card">
+            <span>Module 4 prototype</span>
+            <h2>Resistive Array Inverse Modeling</h2>
+            <p>Use current measurements to reconstruct a hidden 3x3 resistance map for sensor-based cell monitoring.</p>
+            <button class="secondary-action" data-target="resistance">Start module</button>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" id="wfm" aria-labelledby="wfm-title">
+        <div class="section-kicker">Module 1 · Image data</div>
+        <div class="module-header">
+          <div>
+            <h1 id="wfm-title">Can a model translate one scientific image into another?</h1>
+            <p>
+              In this module, you explore a paired image-to-image learning problem. Your goal is
+              to understand why a conditional GAN can learn a visual mapping from microscopy input
+              to force-map-like output, and why the result still needs scientific validation.
+            </p>
+          </div>
+          <div class="status-pill">Guided lab</div>
+        </div>
+
+        <div class="lab-tabs" role="tablist" aria-label="WFM learning steps">
+          <button class="lab-tab active" data-module="wfm" data-step="learn">Learn</button>
+          <button class="lab-tab" data-module="wfm" data-step="data">Data</button>
+          <button class="lab-tab" data-module="wfm" data-step="train">Train</button>
+          <button class="lab-tab" data-module="wfm" data-step="test">Test</button>
+          <button class="lab-tab" data-module="wfm" data-step="reflect">Reflect</button>
+          <button class="lab-tab" data-module="wfm" data-step="quiz">Quiz</button>
+          <button class="lab-tab" data-module="wfm" data-step="project">Mini Project</button>
+        </div>
+
+        <div class="lab-step active" data-panel="wfm-learn">
+          <div class="content-grid two-col">
+            <article class="lesson-panel">
+              <h2>Define the ML Problem</h2>
+              <p>
+                The scientific question is whether one imaging modality can provide enough
+                information to estimate another measurement that is harder or slower to obtain.
+                The ML task is not classification. It is a conditional image-to-image mapping:
+                input image in, predicted target-like image out.
+              </p>
+              <div class="module-flow">
+                <div><strong>Input</strong><p>Wrinkle microscopy image.</p></div>
+                <div><strong>Target</strong><p>Aligned force-map-like image.</p></div>
+                <div><strong>Model</strong><p>Pix2pix-style conditional GAN.</p></div>
+                <div><strong>Claim to test</strong><p>Does the generated output preserve scientifically meaningful structure?</p></div>
+              </div>
+              <div class="check-box">
+                <strong>Student prediction</strong>
+                <p>If the model only learns global shape, what type of error might appear in the generated force-map-like image?</p>
+              </div>
+            </article>
+            <article class="lesson-panel diagram-panel">
+              <h2>Why This Model?</h2>
+              <p>
+                A conditional GAN is useful because it combines two pressures: make the image
+                match the paired target and make the output look like a realistic target-domain image.
+              </p>
+              <div class="role-row">
+                <button class="role-button active" data-role="generator">Generator</button>
+                <button class="role-button" data-role="discriminator">Discriminator</button>
+                <button class="role-button" data-role="loss">Loss</button>
+              </div>
+              <p id="wfm-role-copy">
+                The generator learns to produce a target-like image from the input microscopy image.
+              </p>
+            </article>
+          </div>
+        </div>
+
+        <div class="lab-step" data-panel="wfm-data">
+          <div class="content-grid two-col">
+            <article class="lesson-panel image-panel">
+              <div class="panel-heading">
+                <h2>Inspect the Paired Data</h2>
+                <div class="segmented" role="group" aria-label="WFM sample view">
+                  <button class="segment-button active" data-wfm-mode="paired">Paired</button>
+                  <button class="segment-button" data-wfm-mode="result">Result</button>
+                </div>
+              </div>
+              <img id="wfm-image" src="assets/wfm-paired-sample.jpg" alt="WFM paired microscopy sample" />
+              <p id="wfm-caption">
+                A paired training image stores input and target domains in one file before preprocessing.
+              </p>
+            </article>
+            <article class="lesson-panel">
+              <h2>Data Questions Before Training</h2>
+              <div class="data-cards">
+                <div><strong>What is one sample?</strong><p>One aligned input-target image pair.</p></div>
+                <div><strong>What should not leak?</strong><p>The same or nearly identical pair should not appear in both train and test.</p></div>
+                <div><strong>What does the model see?</strong><p>The input image only. The target image is used for training loss and evaluation.</p></div>
+              </div>
+              <h2>Choose the Data Split</h2>
+              <div class="option-list">
+                <label><input type="radio" name="wfm-split" checked /> 242 train / 10 test</label>
+                <label><input type="radio" name="wfm-split" /> 200 train / 52 test</label>
+                <label><input type="radio" name="wfm-split" /> Random split each run</label>
+              </div>
+              <div class="feedback-box">
+                <strong>Recommended</strong>
+                <p>Use a fixed held-out test set so your result images are comparable across runs.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="lab-step" data-panel="wfm-train">
+          <div class="content-grid two-col">
+            <article class="lesson-panel">
+              <h2>Explore Saved Checkpoints</h2>
+              <p>
+                WFM GAN training is slow, so the online student version uses prepared checkpoints.
+                Choose an epoch and inspect how the generated image changes. In the code version,
+                students can change epochs, loss weights, and checkpoint selection locally.
+              </p>
+              <div class="experiment-knobs">
+                <div><strong>Epoch</strong><p>More training can improve structure, but can also overfit.</p></div>
+                <div><strong>GAN loss</strong><p>Adds realism pressure from the discriminator.</p></div>
+                <div><strong>L1 loss</strong><p>Adds pixel-level target similarity, often smoothing details.</p></div>
+              </div>
+              <label class="slider-label" for="wfm-epochs">Checkpoint epoch <strong id="wfm-epoch-label">20</strong></label>
+              <input id="wfm-epochs" type="range" min="20" max="200" value="20" step="20" />
+              <div class="option-list">
+                <label><input id="wfm-use-gan" type="checkbox" checked /> Use GAN loss</label>
+                <label><input id="wfm-use-l1" type="checkbox" checked /> Use L1 reconstruction loss</label>
+                <label><input id="wfm-no-checkpoints" type="checkbox" /> Train without fixed visual checkpoints</label>
+              </div>
+              <button class="secondary-action" id="load-wfm-saved">Load saved checkpoint</button>
+              <div class="advanced-local">
+                <div>
+                  <strong>Advanced local training</strong>
+                  <p id="wfm-backend-status">Checking local backend...</p>
+                </div>
+                <button class="primary-action" id="run-wfm-training">Run local training</button>
+              </div>
+            </article>
+            <article class="lesson-panel training-output">
+              <h2>Experiment Observation</h2>
+              <div class="training-meter"><span id="wfm-meter"></span></div>
+              <p id="wfm-training-copy">
+                Load a saved checkpoint online, or run local training when the backend is available.
+              </p>
+              <pre class="live-log" id="wfm-live-log" aria-label="Realtime WFM training log"></pre>
+            </article>
+          </div>
+        </div>
+
+        <div class="lab-step" data-panel="wfm-test">
+          <div class="content-grid two-col">
+            <article class="lesson-panel image-panel">
+              <div class="panel-heading">
+                <h2>Test Your Run</h2>
+                <span class="run-pill" id="wfm-test-run-pill">No run yet</span>
+              </div>
+              <img id="wfm-test-image" src="assets/wfm-result-100.png" alt="WFM generated result comparison" />
+              <p id="wfm-test-caption">
+                Run training first, then this panel will show the closest saved checkpoint for your selected epoch.
+              </p>
+            </article>
+            <article class="lesson-panel">
+              <h2>Your Test Interpretation</h2>
+              <div class="run-summary" id="wfm-run-summary">
+                <strong>Waiting for training</strong>
+                <p>Go to Train, choose an epoch count, and run the guided training simulation.</p>
+              </div>
+              <h2>Evidence Checklist</h2>
+              <div class="assessment-task">
+                <label><input type="checkbox" /> I compared input, generated output, and reference target side by side.</label>
+                <label><input type="checkbox" /> I identified one structure the model preserved.</label>
+                <label><input type="checkbox" /> I identified one detail the model blurred, shifted, or missed.</label>
+                <label><input type="checkbox" /> I separated visual plausibility from scientific validation.</label>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="lab-step" data-panel="wfm-reflect">
+          <article class="lesson-panel reflection-panel">
+            <h2>Write Your Interpretation</h2>
+            <textarea id="wfm-reflection" placeholder="Use this structure: The input was..., the model predicted..., one visual success was..., one failure mode was..., and before scientific use I would validate by..."></textarea>
+          </article>
+        </div>
+
+        <div class="lab-step" data-panel="wfm-quiz">
+          <div class="content-grid two-col">
+            <article class="lesson-panel">
+              <h2>Concept Check</h2>
+              <div class="interactive-quiz" data-quiz="wfm">
+                <div class="quiz-card" data-question-type="choice" data-correct="paired">
+                  <p class="quiz-question">1. Why is WFM framed as a paired image-to-image learning task?</p>
+                  <label><input type="radio" name="wfm-q1" value="classification"> The model only predicts a class label for each image.</label>
+                  <label><input type="radio" name="wfm-q1" value="paired"> Each input microscopy image has a corresponding target image, so the model learns a mapping between two aligned visual domains.</label>
+                  <label><input type="radio" name="wfm-q1" value="language"> The model translates image captions into text reports.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. The paired input-target structure is why a pix2pix-style conditional GAN is appropriate." data-incorrect-feedback="Not quite. The key is not just that the data are images, but that each input image is aligned with a target image."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="smooth">
+                  <p class="quiz-question">2. What is one common effect of L1 reconstruction loss?</p>
+                  <label><input type="radio" name="wfm-q2" value="random"> It makes the generator ignore the target image.</label>
+                  <label><input type="radio" name="wfm-q2" value="smooth"> It encourages pixel-level similarity, but can produce smoother outputs.</label>
+                  <label><input type="radio" name="wfm-q2" value="split"> It automatically prevents train/test leakage.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. L1 helps preserve global structure, but students should still inspect whether fine scientific details are lost." data-incorrect-feedback="Review the training loss. L1 compares generated and target pixels, so it rewards closeness to the reference image."></p>
+                </div>
+                <div class="quiz-card" data-question-type="text" data-keywords="ground truth|validation|physical|experimental|scientific" data-min-matches="1">
+                  <p class="quiz-question">3. Short answer: Why is a realistic-looking generated image not enough for scientific use?</p>
+                  <textarea class="quiz-answer" placeholder="Write one sentence about validation or ground truth."></textarea>
+                  <p class="quiz-feedback" data-correct-feedback="Good. A scientific image model needs validation against physical or experimental ground truth, not only visual plausibility." data-incorrect-feedback="Push the answer beyond appearance. Mention ground truth, experimental validation, or whether the generated pattern matches the underlying science."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="conditional">
+                  <p class="quiz-question">4. In a conditional GAN, what information is given to the generator?</p>
+                  <label><input type="radio" name="wfm-q4" value="noise-only"> Only random noise, with no image context.</label>
+                  <label><input type="radio" name="wfm-q4" value="conditional"> The input image, so the generated output is conditioned on a specific sample.</label>
+                  <label><input type="radio" name="wfm-q4" value="label-only"> Only a class label such as normal or abnormal.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. Conditional generation means the output should depend on the paired input image." data-incorrect-feedback="For pix2pix-style tasks, the model is not generating any random image; it generates an output from a specific input image."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="discriminator">
+                  <p class="quiz-question">5. What does the discriminator judge during GAN training?</p>
+                  <label><input type="radio" name="wfm-q5" value="epochs"> Whether the epoch number is large enough.</label>
+                  <label><input type="radio" name="wfm-q5" value="discriminator"> Whether an input-output pair looks real or generated.</label>
+                  <label><input type="radio" name="wfm-q5" value="split"> Whether the test image is in the training set.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. The discriminator provides the realism pressure that L1 loss alone cannot provide." data-incorrect-feedback="The discriminator is the adversarial critic: it compares real paired examples with generated paired examples."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="heldout">
+                  <p class="quiz-question">6. Why should generated outputs be evaluated on held-out images?</p>
+                  <label><input type="radio" name="wfm-q6" value="heldout"> To test whether the model learned a general mapping rather than memorizing training pairs.</label>
+                  <label><input type="radio" name="wfm-q6" value="prettier"> Because held-out images always look prettier.</label>
+                  <label><input type="radio" name="wfm-q6" value="faster"> Because training loss cannot be computed on training images.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. Held-out testing checks generalization to new samples." data-incorrect-feedback="The goal is not appearance alone; it is whether the learned mapping works beyond images used in training."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="leakage">
+                  <p class="quiz-question">7. Which situation would make the test result less trustworthy?</p>
+                  <label><input type="radio" name="wfm-q7" value="larger-image"> The image is displayed larger on the website.</label>
+                  <label><input type="radio" name="wfm-q7" value="leakage"> A near-duplicate of the test pair appeared in the training set.</label>
+                  <label><input type="radio" name="wfm-q7" value="caption"> The caption describes the generated image.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. Data leakage can make a model look better than it will be on truly new samples." data-incorrect-feedback="Focus on whether the test image is truly unseen. Visual display size and captions do not create model generalization."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="blur">
+                  <p class="quiz-question">8. A generated WFM output preserves broad shape but loses fine texture. What is the best interpretation?</p>
+                  <label><input type="radio" name="wfm-q8" value="perfect"> The model is fully validated because the output is smooth.</label>
+                  <label><input type="radio" name="wfm-q8" value="blur"> The model may capture global structure, but fine scientific details need closer validation.</label>
+                  <label><input type="radio" name="wfm-q8" value="invalid"> The entire paired-image approach is impossible.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. This separates a partial visual success from a stronger scientific claim." data-incorrect-feedback="A blurry but structured output is not automatically success or failure; students should identify what was preserved and what was lost."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="input-target-output">
+                  <p class="quiz-question">9. Which comparison is most useful in the Test step?</p>
+                  <label><input type="radio" name="wfm-q9" value="input-target-output"> Input image, generated output, and reference target side by side.</label>
+                  <label><input type="radio" name="wfm-q9" value="loss-only"> Only the final loss number.</label>
+                  <label><input type="radio" name="wfm-q9" value="input-only"> Only the input image.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. Side-by-side comparison helps students connect model behavior with visible errors." data-incorrect-feedback="A single number or a single image hides the specific mapping error; the paired comparison is the teaching object."></p>
+                </div>
+                <div class="quiz-card" data-question-type="text" data-keywords="experiment|validation|compare|measure|ground truth|repeat" data-min-matches="1">
+                  <p class="quiz-question">10. Short answer: Propose one validation experiment before trusting a generated scientific image.</p>
+                  <textarea class="quiz-answer" placeholder="Example: compare generated output against measured ground truth on new samples."></textarea>
+                  <p class="quiz-feedback" data-correct-feedback="Good. A validation plan should compare generated outputs with independent evidence or repeated experimental measurement." data-incorrect-feedback="Make it more concrete: what ground truth would you compare against, and how would you test the model on new samples?"></p>
+                </div>
+                <div class="quiz-actions">
+                  <button class="primary-button" type="button" data-check-quiz="wfm">Check answers</button>
+                  <button class="secondary-button" type="button" data-reset-quiz="wfm">Reset</button>
+                </div>
+                <p class="quiz-summary" aria-live="polite"></p>
+              </div>
+            </article>
+            <article class="lesson-panel">
+              <h2>Assessment</h2>
+              <div class="assessment-task">
+                <label><input type="checkbox" /> Mark the input image, generated output, and reference target in one result figure.</label>
+                <label><input type="checkbox" /> Explain why paired data make this an image-to-image task.</label>
+                <label><input type="checkbox" /> Compare GAN loss and L1 loss in one sentence.</label>
+                <label><input type="checkbox" /> Name one preserved structure and one failure mode.</label>
+                <label><input type="checkbox" /> Propose one validation experiment using independent ground truth.</label>
+              </div>
+              <div class="feedback-box">
+                <strong>Mini-report target</strong>
+                <p>Students should submit one figure, one setting table, and one paragraph that separates model performance from scientific proof.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="lab-step" data-panel="wfm-project">
+          <article class="lesson-panel project-panel">
+            <span class="reference-tag">Module 1 final mini-project</span>
+            <h2>Mini Project: Test Whether the Generated Image Is Scientifically Trustworthy</h2>
+            <p>
+              Students use the provided GitHub code to run a small WFM experiment locally or inspect
+              prepared checkpoint outputs online. The goal is not only to make a generated image,
+              but to decide whether the image-to-image model learned a meaningful scientific mapping
+              or only produced a visually plausible result.
+            </p>
+            <div class="project-levels">
+              <div>
+                <span>Level 1</span>
+                <strong>Reproduce the Baseline</strong>
+                <p>Load a saved checkpoint or run the starter code. Produce one baseline test figure with input, generated output, and reference target.</p>
+              </div>
+              <div>
+                <span>Level 2</span>
+                <strong>Perturb One Modeling Choice</strong>
+                <p>Change one setting such as epoch count, GAN/L1 loss use, loss weight, or train/test split. Keep the same held-out test image for comparison.</p>
+              </div>
+              <div>
+                <span>Level 3</span>
+                <strong>Validate the Scientific Claim</strong>
+                <p>Decide whether the generated image preserves meaningful structure, misses fine detail, shifts patterns, or creates a misleading smooth output.</p>
+              </div>
+            </div>
+            <div class="project-grid">
+              <div><strong>Research question</strong><p>Did the model learn a usable mapping from microscopy input to force-map-like target, or just learn target-domain appearance?</p></div>
+              <div><strong>Data</strong><p>Use paired WFM samples or prepared checkpoints. Test on a held-out image that was not used to fit the model.</p></div>
+              <div><strong>Coding task</strong><p>Run the baseline, change one setting, and save the new generated output or closest checkpoint result.</p></div>
+              <div><strong>Figure</strong><p>Submit two side-by-side triplets: baseline input/generated/target and modified input/generated/target.</p></div>
+              <div><strong>Setting table</strong><p>Record epoch, GAN loss, L1 loss, data split, checkpoint used, and one observed visual change.</p></div>
+              <div><strong>Failure analysis</strong><p>Name one preserved structure and one failure mode such as blur, local mismatch, shifted pattern, or hallucinated texture.</p></div>
+              <div><strong>Validation paragraph</strong><p>Explain why visual similarity is not enough, and what independent measurement would be needed before scientific use.</p></div>
+              <div><strong>Next experiment</strong><p>Propose one follow-up: more held-out samples, quantitative image similarity, repeated experiment, or comparison with real force measurement.</p></div>
+            </div>
+            <div class="mini-report-card">
+              <h2>Student Submission Checklist</h2>
+              <label><input type="checkbox" /> One baseline result figure.</label>
+              <label><input type="checkbox" /> One modified-setting result figure.</label>
+              <label><input type="checkbox" /> One setting table explaining what changed.</label>
+              <label><input type="checkbox" /> One preserved feature and one failure mode.</label>
+              <label><input type="checkbox" /> One validation plan before trusting the generated image scientifically.</label>
+            </div>
+            <div class="project-extension">
+              <strong>Optional deeper extension</strong>
+              <p>Compare two checkpoints and decide whether longer training improves local details, mainly changes smoothness, or starts to overfit the held-out example.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" id="ecg" aria-labelledby="ecg-title">
+        <div class="section-kicker">Module 2 · Signal data</div>
+        <div class="module-header">
+          <div>
+            <h1 id="ecg-title">Can a model detect arrhythmia patterns from ECG signals?</h1>
+            <p>
+              In this module, you learn what an ECG waveform represents, train a heartbeat classifier,
+              test it on held-out records, and decide whether a high score is enough for biomedical use.
+            </p>
+          </div>
+          <div class="status-pill">Interactive study</div>
+        </div>
+
+        <div class="lab-tabs" role="tablist" aria-label="ECG learning steps">
+          <button class="lab-tab active" data-module="ecg" data-step="learn">Learn</button>
+          <button class="lab-tab" data-module="ecg" data-step="data">Data</button>
+          <button class="lab-tab" data-module="ecg" data-step="train">Train</button>
+          <button class="lab-tab" data-module="ecg" data-step="test">Test</button>
+          <button class="lab-tab" data-module="ecg" data-step="reflect">Reflect</button>
+          <button class="lab-tab" data-module="ecg" data-step="quiz">Quiz</button>
+          <button class="lab-tab" data-module="ecg" data-step="project">Mini Project</button>
+        </div>
+
+        <div class="lab-step active" data-panel="ecg-learn">
+          <div class="content-grid two-col">
+            <article class="lesson-panel">
+              <h2>ECG Background: What Is the Signal?</h2>
+              <p>
+                An electrocardiogram records voltage changes caused by the heart's electrical activity.
+                A single heartbeat usually contains a P wave, a sharp QRS complex, and a T wave. In this
+                module, each model input is a short 1D window around one heartbeat.
+              </p>
+              <div class="module-flow">
+                <div><strong>Input</strong><span>Fixed-length ECG waveform segment</span></div>
+                <div><strong>Target</strong><span>AAMI-style beat class such as N, SVEB, VEB, F, or Q</span></div>
+                <div><strong>Model</strong><span>1D CNN, LSTM, or CNN-LSTM</span></div>
+                <div><strong>Question</strong><span>Can the model generalize to unseen patient records?</span></div>
+              </div>
+              <div class="check-box">
+                <strong>Prediction before experiment</strong>
+                <p>If normal beats dominate the dataset, which metric might look better: accuracy or macro-F1?</p>
+              </div>
+            </article>
+            <article class="lesson-panel waveform-panel">
+              <div class="panel-heading">
+                <h2>Inspect Waveforms</h2>
+                <select id="waveform-select" aria-label="Select ECG waveform">
+                  <option value="normal">N</option>
+                  <option value="sveb">SVEB</option>
+                  <option value="veb">VEB</option>
+                </select>
+              </div>
+              <img id="waveform-image" src="assets/ecg-normal.png" alt="Normal ECG waveform sample" />
+              <div class="data-cards compact-cards">
+                <div><strong>N</strong><p>Normal or bundle branch block beats. This is the dominant class.</p></div>
+                <div><strong>SVEB</strong><p>Supraventricular ectopic beats. Rare classes are easy to miss.</p></div>
+                <div><strong>VEB</strong><p>Ventricular ectopic beats. Clinically important errors may be hidden by accuracy.</p></div>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="lab-step" data-panel="ecg-data">
+          <div class="content-grid two-col">
+            <article class="lesson-panel">
+              <h2>Data Audit Before Training</h2>
+              <p>
+                The dataset is made from beat-level ECG segments. Before choosing a model, students must
+                check whether the split tests true generalization, whether rare arrhythmias are represented,
+                and whether the label distribution makes accuracy misleading.
+              </p>
+              <div class="option-list">
+                <label><input type="radio" name="ecg-split" value="record" checked /> Record-wise split</label>
+                <label><input type="radio" name="ecg-split" value="random" /> Random beat-level split</label>
+              </div>
+              <p id="split-explanation">
+                Record-wise split is harder because test records are unseen during training, but it is a better generalization test.
+              </p>
+              <div class="data-cards">
+                <div><strong>Leakage risk</strong><p>Random beat splits may place similar beats from the same record in both train and test.</p></div>
+                <div><strong>Class imbalance</strong><p>Normal beats dominate, so rare arrhythmias need class-level evaluation.</p></div>
+                <div><strong>Clinical question</strong><p>The model should be judged by failure patterns, not only a single score.</p></div>
+              </div>
+            </article>
+            <article class="lesson-panel">
+              <h2>Class Distribution</h2>
+              <div class="class-bars" aria-label="AAMI class distribution">
+                <div style="--bar: 100%"><span>N</span><strong>90,595</strong></div>
+                <div style="--bar: 9%"><span>Q</span><strong>8,041</strong></div>
+                <div style="--bar: 8%"><span>VEB</span><strong>7,235</strong></div>
+                <div style="--bar: 3%"><span>SVEB</span><strong>2,781</strong></div>
+                <div style="--bar: 1%"><span>F</span><strong>802</strong></div>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="lab-step" data-panel="ecg-train">
+          <div class="content-grid three-col">
+            <article class="lesson-panel">
+              <h2>Choose Model</h2>
+              <div class="option-list">
+                <label><input type="radio" name="ecg-model" value="cnn" checked /> 1D CNN</label>
+                <label><input type="radio" name="ecg-model" value="lstm" /> LSTM</label>
+                <label><input type="radio" name="ecg-model" value="cnnlstm" /> CNN-LSTM</label>
+              </div>
+              <div class="check-box">
+                <strong>Model logic</strong>
+                <p>1D CNNs detect local morphology such as peaks and slopes. LSTM-style models focus on temporal order. CNN-LSTM combines local feature extraction with sequence modeling.</p>
+              </div>
+            </article>
+            <article class="lesson-panel">
+              <h2>Training Options</h2>
+              <label class="slider-label" for="ecg-epochs">Epochs <strong id="ecg-epoch-label">10</strong></label>
+              <input id="ecg-epochs" type="range" min="3" max="30" value="10" step="1" />
+              <label class="toggle-line"><input id="class-weighting" type="checkbox" checked /> Use class weighting</label>
+              <p class="small-note">
+                Class weighting gives rare classes more influence in the loss. More epochs are not automatically better; students should compare validation behavior and test errors.
+              </p>
+              <button class="secondary-action" id="load-ecg-saved">Load saved experiment</button>
+              <div class="advanced-local">
+                <div>
+                  <strong>Advanced local training</strong>
+                  <p id="ecg-backend-status">Checking local backend...</p>
+                </div>
+                <button class="primary-action" id="run-ecg-training">Run local training</button>
+              </div>
+            </article>
+            <article class="lesson-panel training-output">
+              <h2>Training Log</h2>
+              <div class="training-meter"><span id="ecg-meter"></span></div>
+              <p id="ecg-training-copy">
+                Run training to compare training accuracy, validation behavior, and expected test metrics.
+              </p>
+              <pre class="live-log" id="ecg-live-log" aria-label="Realtime ECG training log"></pre>
+            </article>
+          </div>
+        </div>
+
+        <div class="lab-step" data-panel="ecg-test">
+          <div class="content-grid two-col">
+            <article class="lesson-panel metric-panel">
+              <div class="panel-heading">
+                <h2>Test Your Run</h2>
+                <span class="run-pill" id="ecg-test-run-pill">No run yet</span>
+              </div>
+              <div class="run-summary" id="ecg-run-summary">
+                <strong>Waiting for training</strong>
+                <p>Go to Train, choose a model and settings, then run the guided training simulation.</p>
+              </div>
+              <div class="metric-toggle" role="group" aria-label="Metric explanation">
+                <button class="metric-button active" data-metric="accuracy">Accuracy</button>
+                <button class="metric-button" data-metric="macro">Macro-F1</button>
+              </div>
+              <strong id="metric-value">0.780</strong>
+              <p id="metric-copy">
+                Overall correctness looks reasonable because normal beats dominate the test set.
+              </p>
+              <div class="assessment-task">
+                <label><input type="checkbox" /> I compared accuracy with macro-F1 before judging performance.</label>
+                <label><input type="checkbox" /> I inspected at least one minority-class error in the confusion matrix.</label>
+                <label><input type="checkbox" /> I decided whether the model is a screening aid or a clinical decision model.</label>
+              </div>
+            </article>
+            <article class="lesson-panel matrix-panel">
+              <h2>Click a Confusion Matrix Cell</h2>
+              <div class="matrix" aria-label="ECG confusion matrix">
+                <span></span><span>N</span><span>SVEB</span><span>VEB</span><span>F</span><span>Q</span>
+                <span>N</span><button data-cell="N->N">12061</button><button data-cell="N->SVEB">392</button><button data-cell="N->VEB">197</button><button data-cell="N->F">535</button><button data-cell="N->Q">709</button>
+                <span>SVEB</span><button data-cell="SVEB->N">1570</button><button data-cell="SVEB->SVEB">248</button><button data-cell="SVEB->VEB">4</button><button data-cell="SVEB->F">1</button><button data-cell="SVEB->Q">0</button>
+                <span>VEB</span><button data-cell="VEB->N">94</button><button data-cell="VEB->SVEB">5</button><button data-cell="VEB->VEB">236</button><button data-cell="VEB->F">31</button><button data-cell="VEB->Q">1</button>
+                <span>F</span><button data-cell="F->N">0</button><button data-cell="F->SVEB">1</button><button data-cell="F->VEB">0</button><button data-cell="F->F">1</button><button data-cell="F->Q">0</button>
+                <span>Q</span><button data-cell="Q->N">0</button><button data-cell="Q->SVEB">1</button><button data-cell="Q->VEB">5</button><button data-cell="Q->F">0</button><button data-cell="Q->Q">1</button>
+              </div>
+              <p id="matrix-copy">
+                The diagonal cells show correct predictions. Off-diagonal cells show errors.
+              </p>
+            </article>
+          </div>
+        </div>
+
+        <div class="lab-step" data-panel="ecg-reflect">
+          <article class="lesson-panel reflection-panel">
+            <h2>Explain the Result</h2>
+            <p>
+              A useful ECG model explanation should connect the metric result to the biomedical risk:
+              which class is missed, why that matters, and what validation is still missing.
+            </p>
+            <textarea id="ecg-reflection" placeholder="Example: Accuracy is higher than macro-F1 because the model performs best on the dominant normal class and struggles with rare classes. I would not treat this as clinically reliable until it is tested on unseen patient records and rare-class recall improves."></textarea>
+            <div class="assessment-task">
+              <label><input type="checkbox" /> I named one class the model handles well.</label>
+              <label><input type="checkbox" /> I named one class or error type the model handles poorly.</label>
+              <label><input type="checkbox" /> I explained what additional validation would be needed before clinical use.</label>
+            </div>
+          </article>
+        </div>
+
+        <div class="lab-step" data-panel="ecg-quiz">
+          <div class="content-grid two-col">
+            <article class="lesson-panel">
+              <h2>Concept Check</h2>
+              <div class="interactive-quiz" data-quiz="ecg">
+                <div class="quiz-card" data-question-type="choice" data-correct="record">
+                  <p class="quiz-question">1. Why use a record-wise split instead of a random beat split?</p>
+                  <label><input type="radio" name="ecg-q1" value="record"> It tests generalization to unseen patient records and reduces leakage from similar beats in the same record.</label>
+                  <label><input type="radio" name="ecg-q1" value="faster"> It always makes training faster.</label>
+                  <label><input type="radio" name="ecg-q1" value="balanced"> It guarantees every arrhythmia class has the same number of samples.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. Patient-level or record-wise splitting is a core biomedical ML validation issue." data-incorrect-feedback="Think about leakage. If beats from the same patient appear in both train and test, the test score can look better than real deployment performance."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="imbalance">
+                  <p class="quiz-question">2. Why can accuracy be misleading in ECG arrhythmia classification?</p>
+                  <label><input type="radio" name="ecg-q2" value="imbalance"> A model can do well on the dominant normal class while missing rare arrhythmia classes.</label>
+                  <label><input type="radio" name="ecg-q2" value="images"> Accuracy only works for image models.</label>
+                  <label><input type="radio" name="ecg-q2" value="epochs"> Accuracy is only meaningful after 100 epochs.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. This is why macro-F1 and confusion matrices are important in imbalanced biomedical data." data-incorrect-feedback="The main issue is class imbalance: a high accuracy can hide poor performance on clinically important minority classes."></p>
+                </div>
+                <div class="quiz-card" data-question-type="text" data-keywords="macro-f1|minority|rare|class|equal|confusion" data-min-matches="1">
+                  <p class="quiz-question">3. Short answer: What extra information does macro-F1 or a confusion matrix add?</p>
+                  <textarea class="quiz-answer" placeholder="Write one sentence about minority classes or class-level errors."></textarea>
+                  <p class="quiz-feedback" data-correct-feedback="Good. Macro-F1 and confusion matrices make class-level failures visible, especially for rare arrhythmias." data-incorrect-feedback="Try to mention class-level performance, rare classes, minority classes, or which labels are confused with each other."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="waveform">
+                  <p class="quiz-question">4. What is the input to the ECG model in this module?</p>
+                  <label><input type="radio" name="ecg-q4" value="waveform"> A fixed-length 1D heartbeat waveform segment.</label>
+                  <label><input type="radio" name="ecg-q4" value="paragraph"> A paragraph from a patient report.</label>
+                  <label><input type="radio" name="ecg-q4" value="image-pair"> A paired microscopy image.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. The ECG model reads a 1D signal segment, not a 2D image." data-incorrect-feedback="Focus on the data type: ECG arrhythmia detection uses waveform segments cut around heartbeats."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="filters">
+                  <p class="quiz-question">5. What does a 1D CNN learn from ECG signals?</p>
+                  <label><input type="radio" name="ecg-q5" value="filters"> Local waveform patterns such as peaks, slopes, and segment shapes.</label>
+                  <label><input type="radio" name="ecg-q5" value="pixels"> Color texture from RGB pixels.</label>
+                  <label><input type="radio" name="ecg-q5" value="names"> Patient names and record IDs.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. 1D filters slide along time to detect local signal patterns." data-incorrect-feedback="A 1D CNN uses temporal filters over the waveform, not image pixels or metadata."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="class-weight">
+                  <p class="quiz-question">6. Why might class weighting help in this module?</p>
+                  <label><input type="radio" name="ecg-q6" value="class-weight"> It gives rare classes more influence during training.</label>
+                  <label><input type="radio" name="ecg-q6" value="remove-test"> It removes the need for a test set.</label>
+                  <label><input type="radio" name="ecg-q6" value="bigger"> It makes the ECG waveform longer.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. Class weighting is one way to reduce the dominance of the normal class." data-incorrect-feedback="Class weighting changes the loss contribution of classes; it does not replace testing or change waveform length."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="off-diagonal">
+                  <p class="quiz-question">7. In a confusion matrix, what do off-diagonal cells show?</p>
+                  <label><input type="radio" name="ecg-q7" value="off-diagonal"> Misclassifications, such as SVEB beats predicted as normal.</label>
+                  <label><input type="radio" name="ecg-q7" value="perfect"> Only correct predictions.</label>
+                  <label><input type="radio" name="ecg-q7" value="epochs"> The number of training epochs.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. Off-diagonal cells show which classes are confused with each other." data-incorrect-feedback="The diagonal is correct predictions; off-diagonal cells are errors."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="patient">
+                  <p class="quiz-question">8. Why is patient-level validation important before clinical use?</p>
+                  <label><input type="radio" name="ecg-q8" value="patient"> It checks whether the model works on patients not seen during training.</label>
+                  <label><input type="radio" name="ecg-q8" value="style"> It only makes plots look cleaner.</label>
+                  <label><input type="radio" name="ecg-q8" value="no-label"> It means labels are no longer needed.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. Clinical deployment needs evidence that the model generalizes to new patients." data-incorrect-feedback="The concern is real-world generalization: new patient records may differ from training records."></p>
+                </div>
+                <div class="quiz-card" data-question-type="text" data-keywords="leakage|same patient|same record|similar beats|train|test" data-min-matches="1">
+                  <p class="quiz-question">9. Short answer: Explain one way data leakage could happen in ECG beat classification.</p>
+                  <textarea class="quiz-answer" placeholder="Mention same patient/record beats appearing in both train and test."></textarea>
+                  <p class="quiz-feedback" data-correct-feedback="Good. Leakage happens when test examples are too similar to training examples because they come from the same record or patient." data-incorrect-feedback="Try to name the source of leakage: beats from the same patient or record appearing in both training and testing."></p>
+                </div>
+                <div class="quiz-card" data-question-type="text" data-keywords="threshold|class weight|more data|resampling|augmentation|macro-f1|rare" data-min-matches="1">
+                  <p class="quiz-question">10. Short answer: Name one experiment that could improve rare-class performance.</p>
+                  <textarea class="quiz-answer" placeholder="Example: class weighting, resampling, more rare-class data, or threshold tuning."></textarea>
+                  <p class="quiz-feedback" data-correct-feedback="Good. The next experiment should target minority-class recall, not just overall accuracy." data-incorrect-feedback="Make the experiment specific to rare classes: class weighting, resampling, augmentation, more labeled rare beats, or threshold tuning."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="qrs">
+                  <p class="quiz-question">11. Which part of a typical ECG beat is usually the sharpest high-amplitude feature?</p>
+                  <label><input type="radio" name="ecg-q11" value="p"> P wave</label>
+                  <label><input type="radio" name="ecg-q11" value="qrs"> QRS complex</label>
+                  <label><input type="radio" name="ecg-q11" value="baseline"> Flat baseline before the beat</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. The QRS complex is often the most visually prominent local morphology that a 1D model can learn from." data-incorrect-feedback="Review the waveform background: the QRS complex is the sharp high-amplitude feature in many ECG beats."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="validation">
+                  <p class="quiz-question">12. What should students avoid claiming from this model alone?</p>
+                  <label><input type="radio" name="ecg-q12" value="validation"> That it is clinically diagnostic without external patient-level validation.</label>
+                  <label><input type="radio" name="ecg-q12" value="signal"> That ECG is a 1D signal.</label>
+                  <label><input type="radio" name="ecg-q12" value="matrix"> That confusion matrices show error patterns.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. A classroom model can teach workflow and failure analysis, but clinical claims need stronger validation." data-incorrect-feedback="The dangerous overclaim is clinical diagnosis. The module can support learning, but deployment requires external validation and expert review."></p>
+                </div>
+                <div class="quiz-actions">
+                  <button class="primary-button" type="button" data-check-quiz="ecg">Check answers</button>
+                  <button class="secondary-button" type="button" data-reset-quiz="ecg">Reset</button>
+                </div>
+                <p class="quiz-summary" aria-live="polite"></p>
+              </div>
+            </article>
+            <article class="lesson-panel">
+              <h2>Assessment Tasks</h2>
+              <ul class="rubric-list">
+                <li>Sketch one heartbeat and label P wave, QRS complex, and T wave at a conceptual level.</li>
+                <li>Define input shape, label classes, and split method.</li>
+                <li>Compare accuracy and macro-F1 using a confusion-matrix example.</li>
+                <li>Identify one class-imbalance problem and one possible fix.</li>
+                <li>State why biomedical ML needs patient-level validation.</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+
+        <div class="lab-step" data-panel="ecg-project">
+          <article class="lesson-panel project-panel">
+            <span class="reference-tag">Module 2 final mini-project</span>
+            <h2>Build and Audit an ECG Arrhythmia Classifier</h2>
+            <p>
+              Students use the provided code as a starting point, train an ECG beat classifier locally,
+              and then audit whether the model is trustworthy enough for biomedical interpretation.
+            </p>
+            <div class="project-levels">
+              <div>
+                <strong>Level 1 - Reproduce baseline</strong>
+                <p>Run the prepared 1D CNN experiment, record the split method, training settings, accuracy, macro-F1, and confusion matrix.</p>
+              </div>
+              <div>
+                <strong>Level 2 - Diagnose failure</strong>
+                <p>Find one minority-class error, inspect the waveform example, and explain whether the error could matter clinically.</p>
+              </div>
+              <div>
+                <strong>Level 3 - Improve trust</strong>
+                <p>Change one factor such as model family, class weighting, epoch count, or split strategy, then compare the result with the baseline.</p>
+              </div>
+            </div>
+            <div class="project-grid">
+              <div><strong>Research question</strong><p>Can a model classify heartbeat segments while still detecting rare arrhythmia classes?</p></div>
+              <div><strong>Data task</strong><p>Report input length, class labels, class counts, and whether the split is record-wise or random.</p></div>
+              <div><strong>Coding task</strong><p>Run the baseline and one changed setting: CNN vs LSTM, class weighting on/off, or a different epoch count.</p></div>
+              <div><strong>Figure</strong><p>Include one confusion matrix and three waveform-level prediction examples.</p></div>
+              <div><strong>Metric table</strong><p>Report accuracy, macro-F1, and at least two per-class recall values.</p></div>
+              <div><strong>Failure analysis</strong><p>Describe one off-diagonal confusion-matrix cell and why that mistake might happen.</p></div>
+            </div>
+            <div class="mini-report-card">
+              <strong>Student mini-report checklist</strong>
+              <p>Dataset: source, input shape, labels, split. Model: architecture and why it matches 1D signals. Training: epochs, loss, class weighting. Testing: metric table and visualization. Interpretation: strength, failure mode, limitation. Next step: one experiment that would improve trust.</p>
+            </div>
+            <div class="project-extension">
+              <strong>Deeper extension</strong>
+              <p>Compare a random beat-level split with a record-wise split. If the random split performs better, explain why that may be evidence of leakage rather than a truly better biomedical model.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" id="motion" aria-labelledby="motion-title">
+        <div class="section-kicker">Module 3 · Motion and gait data</div>
+        <div class="module-header">
+          <div>
+            <h1 id="motion-title">Can a model use movement data to reason about fall risk?</h1>
+            <p>
+              Students train on public fall/gait data, then use Holomotion-style gait features as a
+              real-device case study for interpretation, domain gap, and validation.
+            </p>
+          </div>
+          <div class="status-pill">Public data + real-device case</div>
+        </div>
+
+        <div class="lab-tabs" role="tablist" aria-label="Motion learning steps">
+          <button class="lab-tab active" data-module="motion" data-step="learn">Learn</button>
+          <button class="lab-tab" data-module="motion" data-step="data">Data</button>
+          <button class="lab-tab" data-module="motion" data-step="train">Train</button>
+          <button class="lab-tab" data-module="motion" data-step="test">Test</button>
+          <button class="lab-tab" data-module="motion" data-step="reflect">Reflect</button>
+          <button class="lab-tab" data-module="motion" data-step="quiz">Quiz</button>
+          <button class="lab-tab" data-module="motion" data-step="project">Mini Project</button>
+        </div>
+
+        <div class="lab-step active" data-panel="motion-learn">
+          <div class="content-grid two-col">
+            <article class="lesson-panel">
+              <h2>Learning Question</h2>
+              <p>
+                Public fall datasets teach the model workflow: sequence input, train/test split,
+                prediction, and error analysis. Holomotion then adds a real-device question:
+                how should gait features become interpretable mobility-risk reasoning?
+              </p>
+              <div class="check-box">
+                <strong>Before you train</strong>
+                <p>Which is more useful for an RNN: one posture snapshot, or a time-ordered movement sequence?</p>
+              </div>
+            </article>
+            <article class="lesson-panel">
+              <h2>Where RNN and GNN Fit</h2>
+              <div class="mapping-list">
+                <div>
+                  <strong>RNN / LSTM</strong>
+                  <p>Reads movement over time: accelerometer windows, gait cycles, Timed Up and Go, or joint-angle curves.</p>
+                </div>
+                <div>
+                  <strong>Holomotion case study</strong>
+                  <p>Uses real device outputs such as walking speed, step time, joint range of motion, trunk/pelvis stability, and asymmetry.</p>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="lab-step" data-panel="motion-data">
+          <div class="content-grid two-col">
+            <article class="lesson-panel">
+              <div class="panel-heading">
+                <h2>Inspect a Simulated Posture</h2>
+                <select id="posture-select" aria-label="Select posture sample">
+                  <option value="neutral">Neutral posture</option>
+                  <option value="forward">Forward head posture</option>
+                  <option value="tilt">Left spinal tilt</option>
+                </select>
+              </div>
+              <div class="skeleton-stage" aria-label="Simulated spine keypoint plot">
+                <svg id="posture-svg" viewBox="0 0 320 360" role="img" aria-labelledby="posture-svg-title">
+                  <title id="posture-svg-title">Simulated spine landmarks</title>
+                </svg>
+              </div>
+            </article>
+            <article class="lesson-panel">
+              <h2>Device-Style Fields</h2>
+              <div class="landmark-table" id="landmark-table"></div>
+              <div class="feedback-box">
+                <strong>Holomotion boundary</strong>
+                <p>Real Holomotion exports can support interpretation, but clinical claims need labels, repeated trials, and validation.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="lab-step" data-panel="motion-train">
+          <div class="content-grid three-col">
+            <article class="lesson-panel">
+              <h2>Choose Task</h2>
+              <div class="option-list">
+                <label><input type="radio" name="motion-task" value="posture" checked /> Static posture risk</label>
+                <label><input type="radio" name="motion-task" value="rom" /> Joint range of motion</label>
+                <label><input type="radio" name="motion-task" value="gait" /> Gait sequence pattern</label>
+              </div>
+            </article>
+            <article class="lesson-panel">
+              <h2>Choose Model</h2>
+              <div class="option-list">
+                <label><input type="radio" name="motion-model" value="rnn" checked /> RNN / LSTM</label>
+                <label><input type="radio" name="motion-model" value="graph" /> Skeleton graph model</label>
+              </div>
+              <label class="slider-label" for="motion-epochs">Epochs <strong id="motion-epoch-label">12</strong></label>
+              <input id="motion-epochs" type="range" min="4" max="30" value="12" step="2" />
+              <button class="secondary-action" id="run-motion-sim">Run prototype training</button>
+            </article>
+            <article class="lesson-panel training-output">
+              <h2>Training Observation</h2>
+              <div class="training-meter"><span id="motion-meter"></span></div>
+              <p id="motion-training-copy">
+                Run the prototype to see how a simulated model learns from structured motion features.
+              </p>
+            </article>
+          </div>
+        </div>
+
+        <div class="lab-step" data-panel="motion-test">
+          <div class="content-grid two-col">
+            <article class="lesson-panel">
+              <div class="panel-heading">
+                <h2>Test Your Prototype Run</h2>
+                <span class="run-pill" id="motion-test-run-pill">No run yet</span>
+              </div>
+              <div class="run-summary" id="motion-run-summary">
+                <strong>Waiting for training</strong>
+                <p>Go to Train, choose a task and model, then run the prototype training simulation.</p>
+              </div>
+              <div class="motion-metrics">
+                <div><span>Accuracy</span><strong id="motion-accuracy">--</strong></div>
+                <div><span>Risk recall</span><strong id="motion-recall">--</strong></div>
+                <div><span>Mean angle error</span><strong id="motion-error">--</strong></div>
+              </div>
+            </article>
+            <article class="lesson-panel">
+              <h2>Movement Curve</h2>
+              <div class="curve-stage">
+                <svg id="motion-curve" viewBox="0 0 420 220" role="img" aria-labelledby="motion-curve-title">
+                  <title id="motion-curve-title">Simulated joint angle over time</title>
+                </svg>
+              </div>
+              <p id="motion-curve-copy">
+                The curve will show a simulated joint angle sequence after training.
+              </p>
+            </article>
+          </div>
+        </div>
+
+        <div class="lab-step" data-panel="motion-reflect">
+          <article class="lesson-panel reflection-panel">
+            <h2>Explain the Prototype</h2>
+            <textarea id="motion-reflection" placeholder="Example: Static posture landmarks support graph-style reasoning, while gait and ROM tasks need time-series models because the order of frames matters."></textarea>
+          </article>
+        </div>
+
+        <div class="lab-step" data-panel="motion-quiz">
+          <div class="content-grid two-col">
+            <article class="lesson-panel">
+              <h2>Concept Check</h2>
+              <div class="interactive-quiz" data-quiz="motion">
+                <div class="quiz-card" data-question-type="choice" data-correct="sequence">
+                  <p class="quiz-question">1. Why is fall or gait prediction a sequence-learning problem?</p>
+                  <label><input type="radio" name="motion-q1" value="static"> Only one static posture snapshot matters.</label>
+                  <label><input type="radio" name="motion-q1" value="sequence"> Movement unfolds over time, so the order and shape of frames can change the interpretation.</label>
+                  <label><input type="radio" name="motion-q1" value="color"> The model mainly learns image color differences.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. This is why RNN/GRU/LSTM-style models are useful for gait windows or sensor sequences." data-incorrect-feedback="The important clue is time. Fall risk is often visible in transitions, timing, rhythm, and instability across frames, not only one measurement."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="multi-feature">
+                  <p class="quiz-question">2. Why is walking speed alone not enough for fall-risk reasoning?</p>
+                  <label><input type="radio" name="motion-q2" value="multi-feature"> Slow speed does not reveal whether risk comes from asymmetry, step timing, joint range, trunk control, or another factor.</label>
+                  <label><input type="radio" name="motion-q2" value="perfect"> Walking speed perfectly identifies the pathological joint.</label>
+                  <label><input type="radio" name="motion-q2" value="unrelated"> Walking speed is never related to fall risk.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. The teaching goal is to connect model output with interpretable gait features, not just a single score." data-incorrect-feedback="Speed can matter, but it is not diagnostic enough by itself. A deeper explanation needs timing, asymmetry, ROM, and trunk/pelvis stability features."></p>
+                </div>
+                <div class="quiz-card" data-question-type="text" data-keywords="domain gap|sensor|protocol|population|validation|holomotion|public" data-min-matches="1">
+                  <p class="quiz-question">3. Short answer: What is one domain-gap issue when moving from public fall data to Holomotion data?</p>
+                  <textarea class="quiz-answer" placeholder="Write one sentence about sensors, protocols, features, populations, or validation."></textarea>
+                  <p class="quiz-feedback" data-correct-feedback="Good. Naming the mismatch is the first step toward a realistic validation plan." data-incorrect-feedback="Try to identify a mismatch: different sensors, feature format, walking protocol, patient population, or lack of ground-truth labels."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="gru">
+                  <p class="quiz-question">4. Why is a GRU/RNN reasonable for public fall or gait data?</p>
+                  <label><input type="radio" name="motion-q4" value="gru"> It can summarize patterns across ordered time steps.</label>
+                  <label><input type="radio" name="motion-q4" value="static"> It ignores the order of the movement frames.</label>
+                  <label><input type="radio" name="motion-q4" value="image-only"> It only works for paired images.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. GRU/RNN models are designed for ordered sequences." data-incorrect-feedback="The core match is temporal order: gait and fall signals unfold over time."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="asymmetry">
+                  <p class="quiz-question">5. Which Holomotion feature group best supports left-right gait comparison?</p>
+                  <label><input type="radio" name="motion-q5" value="asymmetry"> Step length, stride length, step time, and joint range differences between sides.</label>
+                  <label><input type="radio" name="motion-q5" value="id"> Patient ID and file name.</label>
+                  <label><input type="radio" name="motion-q5" value="color"> Video background color.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. Asymmetry features help students reason about side-to-side movement differences." data-incorrect-feedback="Look for features comparing left and right sides, not administrative fields or visual background."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="rom">
+                  <p class="quiz-question">6. What does joint range of motion add beyond a single fall-risk label?</p>
+                  <label><input type="radio" name="motion-q6" value="rom"> It helps explain which joint or movement pattern may contribute to risk.</label>
+                  <label><input type="radio" name="motion-q6" value="replace"> It replaces all need for validation.</label>
+                  <label><input type="radio" name="motion-q6" value="hide"> It hides which body part is abnormal.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. ROM features support interpretability by connecting risk to body mechanics." data-incorrect-feedback="A useful feature should help explain the risk source, not just output a black-box label."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="tug">
+                  <p class="quiz-question">7. What is a limitation of a traditional TUG time score alone?</p>
+                  <label><input type="radio" name="motion-q7" value="tug"> It gives total time but may not identify which movement phase or joint caused difficulty.</label>
+                  <label><input type="radio" name="motion-q7" value="perfect"> It perfectly localizes every joint abnormality.</label>
+                  <label><input type="radio" name="motion-q7" value="image"> It is a paired image-to-image task.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. Instrumented or feature-based analysis can break down the movement more deeply." data-incorrect-feedback="The problem with total time is that it is coarse: it does not explain the source of difficulty."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="uncertainty">
+                  <p class="quiz-question">8. Why should a fall-risk output include uncertainty or confidence?</p>
+                  <label><input type="radio" name="motion-q8" value="uncertainty"> It helps decide when the result is too uncertain and should be reviewed by a human or full assessment.</label>
+                  <label><input type="radio" name="motion-q8" value="decorative"> It is only decorative text for the interface.</label>
+                  <label><input type="radio" name="motion-q8" value="remove-data"> It removes the need for data quality checks.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. Uncertainty is part of responsible deployment, especially for health-related screening." data-incorrect-feedback="A confident-looking wrong answer is dangerous. Uncertainty helps flag cases needing manual review or more complete testing."></p>
+                </div>
+                <div class="quiz-card" data-question-type="text" data-keywords="step time|walking speed|knee|foot|trunk|pelvic|asymmetry|rom|stride" data-min-matches="1">
+                  <p class="quiz-question">9. Short answer: Name two Holomotion features that could support fall-risk interpretation.</p>
+                  <textarea class="quiz-answer" placeholder="Example: step time asymmetry and knee flexion-extension range."></textarea>
+                  <p class="quiz-feedback" data-correct-feedback="Good. These features can connect model prediction to gait mechanics." data-incorrect-feedback="Try naming concrete features: step time, walking speed, knee ROM, foot dorsiflexion, trunk tilt, pelvic rotation, or left-right asymmetry."></p>
+                </div>
+                <div class="quiz-card" data-question-type="text" data-keywords="validation|labels|follow-up|repeat|clinician|ground truth|prospective" data-min-matches="1">
+                  <p class="quiz-question">10. Short answer: What validation step is needed before using Holomotion-based risk reasoning clinically?</p>
+                  <textarea class="quiz-answer" placeholder="Mention labels, repeated trials, clinician assessment, or follow-up outcomes."></textarea>
+                  <p class="quiz-feedback" data-correct-feedback="Good. Real-device reasoning needs labels or external clinical evidence before making strong claims." data-incorrect-feedback="Name a validation source: clinician assessment, fall-history labels, follow-up outcomes, repeated trials, or prospective testing."></p>
+                </div>
+                <div class="quiz-actions">
+                  <button class="primary-button" type="button" data-check-quiz="motion">Check answers</button>
+                  <button class="secondary-button" type="button" data-reset-quiz="motion">Reset</button>
+                </div>
+                <p class="quiz-summary" aria-live="polite"></p>
+              </div>
+            </article>
+            <article class="lesson-panel">
+              <h2>Assessment</h2>
+              <ul class="rubric-list">
+                <li>Explain why GRU/RNN models match time-series motion windows.</li>
+                <li>Extract at least five gait features from a Holomotion-style report.</li>
+                <li>Build one interpretable risk explanation with uncertainty.</li>
+                <li>Propose one validation plan before real clinical use.</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+
+        <div class="lab-step" data-panel="motion-project">
+          <div class="content-grid two-col">
+            <article class="lesson-panel project-panel">
+              <span class="reference-tag">Module 3 final mini-project</span>
+              <h2>Design and Audit a Fall-Risk Reasoning Pipeline</h2>
+              <p>
+                Students use public fall/gait data to reproduce a baseline model, then use a
+                Holomotion-style report as a real-device reference. The final deliverable is a short
+                technical mini-report explaining the model result, the gait evidence, the uncertainty,
+                and what validation would be needed before real use.
+              </p>
+              <div class="project-grid single deep-project">
+                <div><strong>Level 1 - Reproduce baseline</strong><p>Run or inspect the public-data GRU/RNN fall classifier. Report split method, accuracy, fall-risk recall, and one false-positive or false-negative case.</p></div>
+                <div><strong>Level 2 - Design feature evidence</strong><p>Select at least six Holomotion-style features from timing, ROM, asymmetry, and trunk/pelvis stability. Explain what each feature measures mechanically.</p></div>
+                <div><strong>Level 3 - Compare model vs device report</strong><p>Use the Holomotion report as a reference case. Decide whether the model score agrees with the report-level gait evidence or misses important movement details.</p></div>
+                <div><strong>Research question</strong><p>Can a model trained on public motion data support interpretable fall-risk reasoning when applied to real-device gait reports?</p></div>
+                <div><strong>Data task</strong><p>Define the input window or feature table, label source, train/test split, missing fields, and one domain-gap risk between public data and Holomotion data.</p></div>
+                <div><strong>Coding task</strong><p>Run the baseline and change one design choice: GRU vs simpler classifier, feature subset, threshold, class weighting, or sequence length.</p></div>
+                <div><strong>Figure</strong><p>Include one model result figure, such as a confusion matrix or movement curve, and one Holomotion-style feature table or report screenshot.</p></div>
+                <div><strong>Metric table</strong><p>Report accuracy, fall-risk recall, F1 or balanced accuracy, and one case-level agreement statement comparing model output with Holomotion evidence.</p></div>
+                <div><strong>Failure analysis</strong><p>Describe one case where speed, model score, and Holomotion feature evidence do not tell the same story. Explain what extra data would reduce uncertainty.</p></div>
+              </div>
+
+              <div class="mini-report-card">
+                <h3>Student mini-report checklist</h3>
+                <p>
+                  Dataset: source, input shape, label, split. Model: architecture and why it matches motion data.
+                  Holomotion audit: selected features, strongest evidence, missing evidence. Testing: metric table
+                  and visualization. Interpretation: one strength, one failure mode, one limitation. Next step:
+                  one validation experiment.
+                </p>
+              </div>
+
+              <div class="project-extension">
+                <strong>Deeper extension</strong>
+                <p>
+                  Design a small validation study using repeated Holomotion trials, clinician assessment, or
+                  future fall-history labels. State what result would make the model more trustworthy and what
+                  result would show that the public-data model does not transfer well.
+                </p>
+              </div>
+
+              <div class="case-comparison">
+                <h3>Case comparison task</h3>
+                <div class="case-grid">
+                  <div class="case-card">
+                    <strong>Case A</strong>
+                    <p>Walking speed: 0.82 m/s</p>
+                    <p>Low asymmetry, normal knee ROM, mild trunk tilt.</p>
+                  </div>
+                  <div class="case-card">
+                    <strong>Case B</strong>
+                    <p>Walking speed: 0.84 m/s</p>
+                    <p>High left-right step-time asymmetry, reduced knee ROM, increased trunk sway.</p>
+                  </div>
+                </div>
+                <div class="choice-row" data-case-choice>
+                  <button type="button" class="secondary-button" data-case-answer="a">Case A higher risk</button>
+                  <button type="button" class="secondary-button" data-case-answer="b">Case B higher risk</button>
+                  <button type="button" class="secondary-button" data-case-answer="same">Same risk</button>
+                </div>
+                <p class="inline-feedback" id="motion-case-feedback" aria-live="polite"></p>
+              </div>
+            </article>
+            <article class="lesson-panel">
+              <h2>Holomotion Report Comparison Lab</h2>
+              <div class="feature-explorer">
+                <button class="feature-button active" data-feature-group="timing">Step timing</button>
+                <button class="feature-button" data-feature-group="rom">Joint ROM</button>
+                <button class="feature-button" data-feature-group="stability">Trunk/Pelvis</button>
+                <button class="feature-button" data-feature-group="asymmetry">Asymmetry</button>
+              </div>
+              <div class="feature-card" id="feature-card"></div>
+              <div class="risk-builder">
+                <h3>Build Your Risk Explanation</h3>
+                <p>Select the report findings you would use as evidence. Then generate a cautious paragraph students can revise for their mini-report.</p>
+                <div class="risk-options">
+                  <label><input type="checkbox" value="slow walking speed" data-risk-feature /> Slow walking speed</label>
+                  <label><input type="checkbox" value="left-right step-time asymmetry" data-risk-feature /> Step-time asymmetry</label>
+                  <label><input type="checkbox" value="reduced knee range of motion" data-risk-feature /> Reduced knee ROM</label>
+                  <label><input type="checkbox" value="limited ankle dorsiflexion/plantarflexion" data-risk-feature /> Limited foot ROM</label>
+                  <label><input type="checkbox" value="increased trunk or pelvic sway" data-risk-feature /> Trunk/pelvis sway</label>
+                  <label><input type="checkbox" value="missing repeated trials or clinical labels" data-risk-feature /> Missing validation evidence</label>
+                </div>
+                <button type="button" class="primary-button" id="build-motion-risk">Generate explanation</button>
+                <div class="generated-explanation" id="motion-risk-output">
+                  Choose features to create a student-style interpretation.
+                </div>
+              </div>
+              <div class="validation-lab">
+                <h3>Validation Design Challenge</h3>
+                <select id="validation-choice" aria-label="Select validation design">
+                  <option value="repeat">Repeat the same Holomotion test across multiple trials</option>
+                  <option value="clinical">Compare feature profile with clinician assessment</option>
+                  <option value="followup">Track future fall events or mobility outcomes</option>
+                  <option value="domain">Compare public-data model outputs with Holomotion outputs</option>
+                </select>
+                <p id="validation-feedback">Pick a validation design and explain what question it answers.</p>
+              </div>
+              <div class="project-designer">
+                <h3>Student Project Designer</h3>
+                <p>
+                  Build a mini-project plan before writing the report. The goal is to connect a public fall/gait
+                  model with Holomotion-style device evidence instead of treating either result as automatically correct.
+                </p>
+                <div class="designer-grid">
+                  <label>
+                    Prediction target
+                    <select id="motion-design-target">
+                      <option value="fall-risk screening">Fall-risk screening</option>
+                      <option value="movement-phase difficulty">Movement-phase difficulty</option>
+                      <option value="left-right gait asymmetry">Left-right gait asymmetry</option>
+                    </select>
+                  </label>
+                  <label>
+                    Model input
+                    <select id="motion-design-input">
+                      <option value="public wearable-sensor time windows">Public wearable-sensor time windows</option>
+                      <option value="Holomotion summary features">Holomotion summary features</option>
+                      <option value="hybrid public sequence features plus Holomotion report features">Hybrid public sequence + Holomotion report features</option>
+                    </select>
+                  </label>
+                  <label>
+                    Modeling route
+                    <select id="motion-design-model">
+                      <option value="a GRU/RNN sequence classifier">GRU/RNN sequence classifier</option>
+                      <option value="a feature-based classifier with explainability">Feature classifier + explanation</option>
+                      <option value="a two-stage public-model plus device-report audit">Two-stage model + device audit</option>
+                    </select>
+                  </label>
+                  <label>
+                    Validation evidence
+                    <select id="motion-design-validation">
+                      <option value="repeated Holomotion trials">Repeated Holomotion trials</option>
+                      <option value="clinician or physical-therapy assessment">Clinician/PT assessment</option>
+                      <option value="follow-up falls or mobility outcomes">Follow-up fall/mobility outcome</option>
+                    </select>
+                  </label>
+                </div>
+                <button type="button" class="primary-button" id="build-motion-project-plan">Build project plan</button>
+                <div class="generated-explanation" id="motion-project-plan-output">
+                  Choose a target, input, model route, and validation evidence to generate a mini-project plan.
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="resistance" aria-labelledby="resistance-title">
+        <div class="section-kicker">Module 4 - Resistive sensor array</div>
+        <div class="module-header">
+          <div>
+            <h1 id="resistance-title">Can ML reconstruct a local resistance map from limited electrical measurements?</h1>
+            <p>
+              Students explore a 3x3 resistive sensor array. The learning goal is inverse modeling:
+              using measurable current signals under fixed voltage to reconstruct hidden local
+              resistance values that may later correspond to cell coverage or local growth patterns.
+            </p>
+          </div>
+          <div class="status-pill">Inverse sensing module</div>
+        </div>
+
+        <div class="lab-tabs" role="tablist" aria-label="Resistance learning steps">
+          <button class="lab-tab active" data-module="resistance" data-step="learn">Learn</button>
+          <button class="lab-tab" data-module="resistance" data-step="data">Data</button>
+          <button class="lab-tab" data-module="resistance" data-step="train">Train</button>
+          <button class="lab-tab" data-module="resistance" data-step="test">Test</button>
+          <button class="lab-tab" data-module="resistance" data-step="reflect">Reflect</button>
+          <button class="lab-tab" data-module="resistance" data-step="quiz">Quiz</button>
+          <button class="lab-tab" data-module="resistance" data-step="project">Mini Project</button>
+        </div>
+
+        <div class="lab-step active" data-panel="resistance-learn">
+          <div class="content-grid two-col">
+            <article class="lesson-panel">
+              <h2>Learning Question</h2>
+              <p>
+                In a cell-monitoring resistive array, each local region may have a different resistance.
+                Directly and continuously measuring every internal point may be difficult. A more practical
+                setup measures electrical responses such as current under fixed voltage. The ML problem is
+                to infer the hidden 3x3 resistance pattern from those measurable current signals.
+              </p>
+              <div class="check-box">
+                <strong>Before you train</strong>
+                <p>If two different resistance maps create similar current measurements, what extra measurement or validation data would help separate them?</p>
+              </div>
+            </article>
+            <article class="lesson-panel">
+              <h2>Why This Is Different</h2>
+              <div class="mapping-list">
+                <div>
+                  <strong>Forward problem</strong>
+                  <p>Given all local resistances, compute the measurable current response of the circuit.</p>
+                </div>
+                <div>
+                  <strong>Inverse problem</strong>
+                  <p>Given current measurements, reconstruct the hidden local resistance map.</p>
+                </div>
+                <div>
+                  <strong>Research link</strong>
+                  <p>Could fewer electrical measurements support real-time monitoring of cell growth or local abnormal regions?</p>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="lab-step" data-panel="resistance-data">
+          <div class="content-grid two-col">
+            <article class="lesson-panel">
+              <div class="panel-heading">
+                <h2>Training Data Structure</h2>
+                <div class="segment-row" role="group" aria-label="Choose array size">
+                  <button class="segment-button active" data-array-size="3">3x3 example</button>
+                </div>
+              </div>
+              <div class="resistance-grid" id="resistance-grid" aria-label="Resistance heatmap"></div>
+              <p class="figure-caption">Each cell is one hidden local resistance value. The model does not see this map at test time; it only receives current measurements.</p>
+            </article>
+            <article class="lesson-panel">
+              <h2>Input and Output</h2>
+              <table class="reference-table">
+                <tbody>
+                  <tr><th>Input X</th><td>9 current measurements from the resistive array under fixed voltage.</td></tr>
+                  <tr><th>Target y</th><td>9 resistance values reshaped into a 3x3 local resistance map.</td></tr>
+                  <tr><th>Model task</th><td>Regression: predict concrete resistance values, then evaluate high/low localization.</td></tr>
+                  <tr><th>Why this matters</th><td>The reconstruction can indicate where the array has changed, which may later connect to local cell growth or abnormal coverage.</td></tr>
+                </tbody>
+              </table>
+              <div class="feedback-box">
+                <strong>Teaching boundary</strong>
+                <p>The current prototype uses provided CSV data. Biological interpretation would still require experimental validation against real cell-culture measurements or imaging.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="lab-step" data-panel="resistance-train">
+          <div class="content-grid three-col">
+            <article class="lesson-panel">
+              <h2>Choose Modeling Idea</h2>
+              <div class="option-list">
+                <label><input type="radio" name="resistance-model" value="linear" /> Linear baseline</label>
+                <label><input type="radio" name="resistance-model" value="mlp" checked /> MLP regression model</label>
+                <label><input type="radio" name="resistance-model" value="gnn" /> Future graph-based model</label>
+              </div>
+            </article>
+            <article class="lesson-panel">
+              <h2>Training Setup</h2>
+              <div class="mapping-list">
+                <div><strong>Best current setting</strong><p>MLP regression with conductance-based target transformation.</p></div>
+                <div><strong>Physics link</strong><p>Under fixed voltage, current is more directly related to conductance, or 1/R, than to raw resistance R.</p></div>
+              </div>
+              <button class="secondary-action" id="run-resistance-sim">Load trained MLP result</button>
+            </article>
+            <article class="lesson-panel training-output">
+              <h2>Training Observation</h2>
+              <div class="training-meter"><span id="resistance-meter"></span></div>
+              <p id="resistance-training-copy">
+                Load the current trained result to inspect how the model reconstructs high-resistance regions from current measurements.
+              </p>
+            </article>
+          </div>
+        </div>
+
+        <div class="lab-step" data-panel="resistance-test">
+          <div class="content-grid two-col">
+            <article class="lesson-panel">
+              <div class="panel-heading">
+                <h2>Test Reconstruction</h2>
+                <span class="run-pill" id="resistance-test-run-pill">No run yet</span>
+              </div>
+              <div class="run-summary" id="resistance-run-summary">
+                <strong>Waiting for training</strong>
+                <p>Go to Train and load the current MLP inverse-model result.</p>
+              </div>
+              <div class="motion-metrics">
+                <div><span>MAE</span><strong id="resistance-mae">--</strong></div>
+                <div><span>High recall</span><strong id="resistance-pattern">--</strong></div>
+                <div><span>Exact map accuracy</span><strong id="resistance-uncertainty">--</strong></div>
+              </div>
+            </article>
+            <article class="lesson-panel">
+              <h2>Predicted vs True Map</h2>
+              <div class="compare-grid">
+                <div>
+                  <strong>True local map</strong>
+                  <div class="resistance-grid mini" id="true-resistance-grid"></div>
+                </div>
+                <div>
+                  <strong>Predicted local map</strong>
+                  <div class="resistance-grid mini" id="predicted-resistance-grid"></div>
+                </div>
+              </div>
+              <p id="resistance-test-copy">After loading the result, compare whether the model localizes high-resistance regions rather than only matching average resistance.</p>
+              <div class="result-figure-panel">
+                <img src="assets/module4-regression-conductance-examples.png" alt="Module 4 true resistance, predicted resistance, and absolute error examples" />
+                <p>Rows show held-out test samples. Left: true resistance map. Middle: MLP prediction. Right: absolute error.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="lab-step" data-panel="resistance-reflect">
+          <article class="lesson-panel reflection-panel">
+            <h2>Explain the Inverse Problem</h2>
+            <textarea id="resistance-reflection" placeholder="Example: The model uses current measurements to infer local resistance, but different internal maps can sometimes produce similar signals, so validation against experimental ground truth is needed."></textarea>
+          </article>
+        </div>
+
+        <div class="lab-step" data-panel="resistance-quiz">
+          <div class="content-grid two-col">
+            <article class="lesson-panel">
+              <h2>Concept Check</h2>
+              <div class="interactive-quiz" data-quiz="resistance">
+                <div class="quiz-card" data-question-type="choice" data-correct="inverse">
+                  <p class="quiz-question">1. What makes this module an inverse modeling problem?</p>
+                  <label><input type="radio" name="res-q1" value="forward"> The model only computes current from known local resistances.</label>
+                  <label><input type="radio" name="res-q1" value="inverse"> The model predicts hidden local resistances from measured current signals.</label>
+                  <label><input type="radio" name="res-q1" value="label"> The model classifies ECG beats into arrhythmia classes.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. The hard direction is reconstructing hidden local values from measured electrical responses." data-incorrect-feedback="Forward means local resistance values to current measurements. Inverse means current measurements back to hidden local resistance values."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="current">
+                  <p class="quiz-question">2. What is the model input in the current prototype?</p>
+                  <label><input type="radio" name="res-q2" value="current"> A vector of current measurements collected under fixed voltage.</label>
+                  <label><input type="radio" name="res-q2" value="caption"> Image captions from microscopy figures.</label>
+                  <label><input type="radio" name="res-q2" value="patient"> Patient names and dates only.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. The model uses measurable current signals as input." data-incorrect-feedback="The input should be what the device can measure electrically, not unrelated metadata."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="underdetermined">
+                  <p class="quiz-question">3. Why can reconstruction be difficult?</p>
+                  <label><input type="radio" name="res-q3" value="underdetermined"> Different local maps may produce similar current measurements.</label>
+                  <label><input type="radio" name="res-q3" value="easy"> Current measurements always uniquely identify every local resistance.</label>
+                  <label><input type="radio" name="res-q3" value="color"> The colors in the heatmap are random.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. This is why measurement design, model choice, and validation matter." data-incorrect-feedback="Limited measurements may not contain enough information to uniquely recover every internal value."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="gnn">
+                  <p class="quiz-question">4. Why might a graph neural network be useful later?</p>
+                  <label><input type="radio" name="res-q4" value="gnn"> The resistor array has connected nodes and edges that match a graph structure.</label>
+                  <label><input type="radio" name="res-q4" value="text"> The data are primarily paragraphs.</label>
+                  <label><input type="radio" name="res-q4" value="ignore"> It ignores circuit topology completely.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. A GNN can encode which nodes or regions are electrically connected." data-incorrect-feedback="The reason to use a GNN is topology: nodes, edges, and local neighborhood structure."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="noise">
+                  <p class="quiz-question">5. What does measurement noise test?</p>
+                  <label><input type="radio" name="res-q5" value="noise"> Whether reconstruction remains stable when experimental measurements are imperfect.</label>
+                  <label><input type="radio" name="res-q5" value="perfect"> Whether labels are always perfect.</label>
+                  <label><input type="radio" name="res-q5" value="visual"> Whether the heatmap colors are attractive.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. Real experiments have noise, so robustness is part of trust." data-incorrect-feedback="Noise is about experimental uncertainty and robustness, not visual design."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="groundtruth">
+                  <p class="quiz-question">6. What would a real experiment ideally provide for validation?</p>
+                  <label><input type="radio" name="res-q6" value="groundtruth"> Measured electrical signals plus some ground-truth or reference local state.</label>
+                  <label><input type="radio" name="res-q6" value="onlynames"> Only sample names without measurements.</label>
+                  <label><input type="radio" name="res-q6" value="none"> No experimental comparison is needed.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. Validation needs measured inputs and an external reference for local state or pattern." data-incorrect-feedback="A model cannot be trusted experimentally without measured signals and some reference target."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="heatmap">
+                  <p class="quiz-question">7. Why visualize the predicted resistance map as a heatmap?</p>
+                  <label><input type="radio" name="res-q7" value="heatmap"> It shows where the model thinks local resistance is high or low.</label>
+                  <label><input type="radio" name="res-q7" value="hide"> It hides localization errors.</label>
+                  <label><input type="radio" name="res-q7" value="replace"> It replaces quantitative metrics completely.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. The heatmap makes localization and failure patterns easier to inspect." data-incorrect-feedback="Visualization should support interpretation, but it should be paired with quantitative metrics."></p>
+                </div>
+                <div class="quiz-card" data-question-type="choice" data-correct="research">
+                  <p class="quiz-question">8. What is the research motivation behind this module?</p>
+                  <label><input type="radio" name="res-q8" value="research"> Reduce measurement burden while monitoring local cell-growth-related resistance changes.</label>
+                  <label><input type="radio" name="res-q8" value="game"> Build a game unrelated to experiments.</label>
+                  <label><input type="radio" name="res-q8" value="replaceall"> Replace all experiments without validation.</label>
+                  <p class="quiz-feedback" data-correct-feedback="Correct. The scientific question is whether fewer electrical measurements can still recover useful local information." data-incorrect-feedback="The goal is not to remove experiments; it is to make sensing more efficient and interpretable."></p>
+                </div>
+                <div class="quiz-card" data-question-type="text" data-keywords="current|voltage|measurement|signal|electrical|conductance" data-min-matches="1">
+                  <p class="quiz-question">9. Short answer: Name one measurable electrical signal that could be used as model input.</p>
+                  <textarea class="quiz-answer" placeholder="Example: current measurement under fixed voltage."></textarea>
+                  <p class="quiz-feedback" data-correct-feedback="Good. These are the limited observations the inverse model can use." data-incorrect-feedback="Name a concrete electrical measurement, such as current under fixed voltage, voltage response, conductance, or a repeated electrical signal over time."></p>
+                </div>
+                <div class="quiz-card" data-question-type="text" data-keywords="validation|ground truth|experiment|imaging|repeat|reference" data-min-matches="1">
+                  <p class="quiz-question">10. Short answer: What validation step is needed before making biological claims?</p>
+                  <textarea class="quiz-answer" placeholder="Mention experimental ground truth, repeated measurements, or comparison with imaging/reference data."></textarea>
+                  <p class="quiz-feedback" data-correct-feedback="Good. Biological claims need experimental reference data, not just simulated reconstruction." data-incorrect-feedback="Make the validation concrete: compare with experimental ground truth, repeated trials, imaging, or another reference measurement."></p>
+                </div>
+                <div class="quiz-actions">
+                  <button class="primary-button" type="button" data-check-quiz="resistance">Check answers</button>
+                  <button class="secondary-button" type="button" data-reset-quiz="resistance">Reset</button>
+                </div>
+                <p class="quiz-summary" aria-live="polite"></p>
+              </div>
+            </article>
+            <article class="lesson-panel">
+              <h2>Assessment</h2>
+              <ul class="rubric-list">
+                <li>Define the inverse problem using input measurements and output resistance map.</li>
+                <li>Explain why limited measurements can create ambiguity.</li>
+                <li>Explain why conductance transformation matches the circuit physics.</li>
+                <li>Propose one validation link to a real experiment or reference measurement.</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+
+        <div class="lab-step" data-panel="resistance-project">
+          <div class="content-grid two-col">
+            <article class="lesson-panel project-panel">
+              <span class="reference-tag">Module 4 final mini-project</span>
+              <h2>Design a More Reliable Inverse Sensor</h2>
+              <p>
+                Students use current/resistance CSV files to reconstruct a hidden 3x3 resistance
+                map, then audit whether the inverse model is reliable enough to support a real
+                sensing experiment.
+              </p>
+              <div class="project-grid">
+                <div>
+                  <strong>Level 1 - Reproduce baseline</strong>
+                  <p>Run the inverse model and report input currents, output map shape, MAE, high-resistance recall, and one true/predicted/error heatmap.</p>
+                </div>
+                <div>
+                  <strong>Level 2 - Compare formulations</strong>
+                  <p>Compare raw-resistance, log-resistance, conductance-based, and physics-informed versions. Explain why current relates more directly to conductance than resistance.</p>
+                </div>
+                <div>
+                  <strong>Level 3 - Diagnose failure</strong>
+                  <p>Choose one failed sample and label the failure: missed high cell, wrong location, underestimation, symmetry mismatch, or ambiguous measurement.</p>
+                </div>
+                <div>
+                  <strong>Level 4 - Design improvement</strong>
+                  <p>Propose one improvement such as an added measurement path, symmetry augmentation, forward-model consistency loss, noise testing, or a graph-based model.</p>
+                </div>
+                <div>
+                  <strong>Level 5 - Scale to n x n</strong>
+                  <p>Extend the task from 3x3 to 4x4, 5x5, or a student-chosen n x n array. Update the target size to n*n cells and test whether the same measurements still contain enough information.</p>
+                </div>
+              </div>
+              <div class="student-checklist">
+                <strong>Student mini-report checklist</strong>
+                <p>
+                  Research question, data table, model comparison, metric summary, failure-map
+                  analysis, n x n scaling result, proposed improvement, and one validation step
+                  before connecting the result to cell growth or abnormal coverage.
+                </p>
+              </div>
+            </article>
+
+            <article class="lesson-panel">
+              <h2>Inverse Sensor Design Lab</h2>
+              <p>
+                Build a project plan by choosing a modeling strategy, one failure to investigate,
+                and one validation path.
+              </p>
+              <div class="project-designer">
+                <div class="designer-grid">
+                  <label>
+                    Array size challenge
+                    <select id="resistance-design-size">
+                      <option value="3x3 baseline">3x3 baseline</option>
+                      <option value="4x4 scaling challenge">4x4 scaling challenge</option>
+                      <option value="5x5 scaling challenge">5x5 scaling challenge</option>
+                      <option value="student-selected n x n array">Student-selected n x n array</option>
+                    </select>
+                  </label>
+                  <label>
+                    Model formulation
+                    <select id="resistance-design-formulation">
+                      <option value="physics-informed conductance regression">Physics-informed conductance regression</option>
+                      <option value="conductance-based MLP regression">Conductance-based MLP regression</option>
+                      <option value="raw resistance regression">Raw resistance regression</option>
+                      <option value="graph model over array nodes">Graph model over array nodes</option>
+                    </select>
+                  </label>
+                  <label>
+                    Failure to audit
+                    <select id="resistance-design-failure">
+                      <option value="underestimated high-resistance cell">Underestimated high-resistance cell</option>
+                      <option value="missed high-resistance location">Missed high-resistance location</option>
+                      <option value="wrong high-resistance location">Wrong high-resistance location</option>
+                      <option value="symmetric cases producing different predictions">Symmetric cases behaving differently</option>
+                      <option value="multiple high-resistance cells creating ambiguity">Multiple high cells creating ambiguity</option>
+                    </select>
+                  </label>
+                  <label>
+                    Improvement idea
+                    <select id="resistance-design-improvement">
+                      <option value="adding a forward-model consistency loss">Add forward-model consistency loss</option>
+                      <option value="adding row, column, and diagonal measurement paths">Add more measurement paths</option>
+                      <option value="augmenting the training set with rotated and mirrored maps">Add symmetry augmentation</option>
+                      <option value="training with simulated measurement noise">Add noise robustness training</option>
+                      <option value="testing a GNN that respects the array topology">Test a topology-aware GNN</option>
+                    </select>
+                  </label>
+                  <label>
+                    Validation evidence
+                    <select id="resistance-design-validation">
+                      <option value="a physical breadboard or resistor-array test">Physical resistor-array test</option>
+                      <option value="repeated current measurements from the same array">Repeated measurement stability</option>
+                      <option value="microscopy or cell-coverage reference data">Cell imaging/reference data</option>
+                      <option value="a held-out array size or unseen resistance pattern">Unseen pattern generalization</option>
+                    </select>
+                  </label>
+                </div>
+                <button type="button" class="primary-button" id="build-resistance-project-plan">Build inverse-sensor plan</button>
+                <div class="generated-explanation" id="resistance-project-plan-output">
+                  Choose a design path to generate a student-style mini-project plan.
+                </div>
+              </div>
+              <div class="student-question">
+                <strong>Research challenge</strong>
+                <p>
+                  If two different resistance maps produce very similar current measurements,
+                  what extra measurement or constraint would make the inverse problem less ambiguous?
+                  If the array grows to n x n, does the number of measurements grow fast enough to
+                  recover all hidden cells?
+                </p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="framework" aria-labelledby="framework-title">
+        <div class="section-kicker">Deliverable framework</div>
+        <h1 id="framework-title">How Each Module Is Structured</h1>
+        <p class="page-intro">
+          The website follows the same instructional pattern as the Word deliverable: students learn
+          the data type, run or inspect a model, answer assessment questions, and finish with a mini-project.
+        </p>
+
+        <div class="content-grid two-col">
+          <article class="lesson-panel">
+            <h2>Four-Module Scope</h2>
+            <table class="reference-table">
+              <thead>
+                <tr><th>Module</th><th>Core ML idea</th><th>Scientific/engineering case</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>1</td><td>Conditional GAN</td><td>WFM image-to-image prediction</td></tr>
+                <tr><td>2</td><td>1D signal classification</td><td>ECG arrhythmia beat classification</td></tr>
+                <tr><td>3</td><td>RNN/GRU sequence modeling</td><td>Fall/gait prediction and Holomotion case study</td></tr>
+                <tr><td>4</td><td>Inverse modeling / GNN extension</td><td>Resistive array local-map reconstruction</td></tr>
+              </tbody>
+            </table>
+          </article>
+          <article class="lesson-panel">
+            <h2>Module Section Pattern</h2>
+            <table class="reference-table">
+              <thead>
+                <tr><th>Step</th><th>Student task</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Learn</td><td>Understand the scientific question and the model family.</td></tr>
+                <tr><td>Data</td><td>Inspect input shape, label meaning, split strategy, and bias risk.</td></tr>
+                <tr><td>Train</td><td>Change settings and observe training behavior.</td></tr>
+                <tr><td>Test</td><td>Evaluate held-out examples and identify failure patterns.</td></tr>
+                <tr><td>Quiz</td><td>Answer concept, metric, and limitation questions.</td></tr>
+                <tr><td>Project</td><td>Run code locally, modify one setting, and write a mini-report.</td></tr>
+              </tbody>
+            </table>
+          </article>
+          <article class="lesson-panel">
+            <h2>Mini-Report Template</h2>
+            <ul class="study-list">
+              <li>Dataset: name, input shape, output label, train/test split.</li>
+              <li>Model: architecture family and why it matches the data type.</li>
+              <li>Training: epochs, loss, and one changed setting.</li>
+              <li>Testing: one metric table and one visualization.</li>
+              <li>Interpretation: one strength, one failure mode, one limitation.</li>
+              <li>Next step: one experiment that would improve trust in the result.</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" id="notebook" aria-labelledby="notebook-title">
+        <div class="section-kicker">Student notebook</div>
+        <h1 id="notebook-title">Your Study Notes</h1>
+        <div class="content-grid two-col">
+          <article class="lesson-panel">
+            <h2>Module 1 Reflection</h2>
+            <p id="saved-wfm-note">No note yet. Write one in Module 1 Reflect.</p>
+          </article>
+          <article class="lesson-panel">
+            <h2>Module 2 Reflection</h2>
+            <p id="saved-ecg-note">No note yet. Write one in Module 2 Reflect.</p>
+          </article>
+          <article class="lesson-panel">
+            <h2>Module 3 Reflection</h2>
+            <p id="saved-motion-note">No note yet. Write one in Module 3 Reflect.</p>
+          </article>
+          <article class="lesson-panel">
+            <h2>Module 4 Reflection</h2>
+            <p id="saved-resistance-note">No note yet. Write one in Module 4 Reflect.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" id="references" aria-labelledby="references-title">
+        <div class="section-kicker">Source papers and module context</div>
+        <h1 id="references-title">References</h1>
+        <p class="page-intro">
+          Each module is connected to a real research workflow. This page helps students separate
+          the original scientific contribution from the simplified educational activity in this website.
+        </p>
+
+        <div class="content-grid two-col">
+          <article class="lesson-panel reference-card">
+            <span class="reference-tag">Module 1 source paper</span>
+            <h2>Wrinkle force microscopy: a machine learning based approach to predict cell mechanics from images</h2>
+            <p>
+              Li, H., Matsunaga, D., Matsui, T. S., Aosaki, H., Kinoshita, G., Inoue, K.,
+              Doostmohammadi, A., and Deguchi, S. Communications Biology, 2022.
+            </p>
+            <div class="reference-actions">
+              <a class="primary-link" href="assets/wfm-source-paper.pdf" target="_blank" rel="noreferrer">Open PDF</a>
+              <a class="secondary-link" href="https://doi.org/10.1038/s42003-022-03288-x" target="_blank" rel="noreferrer">Open DOI</a>
+            </div>
+          </article>
+
+          <article class="lesson-panel">
+            <h2>How Module 1 Uses This Paper</h2>
+            <div class="mapping-list">
+              <div>
+                <strong>Original paper</strong>
+                <p>Uses microscopy and traction-force data to build WFM, a workflow for predicting cellular force distributions from images.</p>
+              </div>
+              <div>
+                <strong>Educational module</strong>
+                <p>Focuses on the paired image-to-image learning workflow: input image, target image, generator, discriminator, and visual testing.</p>
+              </div>
+              <div>
+                <strong>Important boundary</strong>
+                <p>The website demo teaches the machine-learning structure. It should not claim full physical validation of vector force fields.</p>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div class="content-grid two-col">
+          <article class="lesson-panel">
+            <h2>Paper-to-Lesson Map</h2>
+            <table class="reference-table">
+              <thead>
+                <tr>
+                  <th>Paper idea</th>
+                  <th>Student activity</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Wrinkles are related to cell-generated forces.</td>
+                  <td>Inspect paired images and ask what visual information the model can use.</td>
+                </tr>
+                <tr>
+                  <td>GAN learns from corresponding input and force-distribution images.</td>
+                  <td>Run the guided GAN training step and compare generator/discriminator roles.</td>
+                </tr>
+                <tr>
+                  <td>Predictions must be interpreted carefully in a scientific workflow.</td>
+                  <td>Use the result checklist and reflection step before making claims.</td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+
+          <article class="lesson-panel">
+            <h2>Reference Reading Questions</h2>
+            <ul class="study-list">
+              <li>What experimental data did the original paper need before training the GAN?</li>
+              <li>Why is predicting force from microscope images useful compared with traditional TFM?</li>
+              <li>Which part of the original workflow is simplified in this teaching website?</li>
+              <li>What extra validation would be needed before using predictions as scientific force measurements?</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="content-grid two-col">
+          <article class="lesson-panel">
+            <span class="reference-tag">Repository</span>
+            <h2>Code and Local Experiments</h2>
+            <p>
+              The public website runs as a static GitHub Pages site. Module code is kept in the
+              companion GitHub repository for students who want to inspect or run local experiments.
+            </p>
+            <div class="reference-actions">
+              <a class="primary-link repo-link" href="#" data-repo-path="">Open repository</a>
+              <a class="secondary-link repo-link" href="#" data-repo-path="CODE_INDEX.md">Code index</a>
+            </div>
+          </article>
+
+          <article class="lesson-panel">
+            <h2>Module Code Links</h2>
+            <div class="code-link-grid">
+              <a class="code-link-card repo-link" href="#" data-repo-path="module3_fall">
+                <strong>Module 3 Motion</strong>
+                <span>Fall and gait sequence modeling prototype</span>
+              </a>
+              <a class="code-link-card repo-link" href="#" data-repo-path="module4_resistive_array">
+                <strong>Module 4 Sensors</strong>
+                <span>Resistive array inverse-modeling prototype</span>
+              </a>
+              <a class="code-link-card repo-link" href="#" data-repo-path="backend_server.py">
+                <strong>Local Backend</strong>
+                <span>Instructor-only realtime training server</span>
+              </a>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <script src="deploy-config.js?v=20260708"></script>
+    <script src="app.js?v=20260704m5"></script>
+  </body>
+</html>
