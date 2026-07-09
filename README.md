@@ -10,6 +10,8 @@ The project currently contains two guided modules:
 
 - Module 1: WFM image-to-image learning with a pix2pix-style conditional GAN workflow.
 - Module 2: ECG time-series classification with a 1D CNN workflow using MIT-BIH beat segments.
+- Module 3: Motion/fall-risk sequence modeling and Holomotion-style feature interpretation.
+- Module 4: Resistive array inverse modeling for local sensor-map reconstruction.
 
 ## Current Prototype
 
@@ -56,6 +58,10 @@ Student workflow:
 ```text
 .
 |-- backend_server.py
+|-- module1_wfm/
+|-- module2_ecg/
+|-- module3_fall/
+|-- module4_resistive_array/
 |-- website/
 |   |-- index.html
 |   |-- styles.css

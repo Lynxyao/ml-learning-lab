@@ -36,8 +36,10 @@ The Python module code remains in the GitHub repository and is linked from the w
 
 ## Current Code Links
 
+- Module 1 WFM prototype: `module1_wfm/`
+- Module 2 ECG prototype: `module2_ecg/`
 - Module 3 fall/motion prototype: `module3_fall/`
 - Module 4 resistive array prototype: `module4_resistive_array/`
 - Local backend prototype: `backend_server.py`
 
-Module 1 and Module 2 realtime training currently depend on local project paths and datasets. For public deployment, the website uses saved figures and guided interactions instead of running training online.
+Realtime training depends on local datasets and Python environments. For public deployment, the website uses saved figures and guided interactions instead of running training online.

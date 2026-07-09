@@ -11,6 +11,8 @@ This repository pairs a static student website with local prototype code.
 
 ## Module Code
 
+- `module1_wfm/` - WFM image-to-image learning prototype
+- `module2_ecg/` - ECG beat classification prototype
 - `module3_fall/` - public fall/motion sequence modeling prototype
 - `module4_resistive_array/` - resistive array inverse-modeling prototype
 - `backend_server.py` - local-only teaching backend for realtime demos
