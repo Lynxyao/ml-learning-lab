@@ -863,13 +863,13 @@ const resistanceProjectPlanButton = document.querySelector("#build-resistance-pr
 if (resistanceProjectPlanButton) {
   resistanceProjectPlanButton.addEventListener("click", () => {
     const arraySize =
-      document.querySelector("#resistance-design-size")?.value || "3x3 baseline";
+      document.querySelector("#resistance-design-size")?.value || "8x8 baseline";
     const formulation =
-      document.querySelector("#resistance-design-formulation")?.value || "physics-informed conductance regression";
+      document.querySelector("#resistance-design-formulation")?.value || "Hybrid GNN with Simon consistency";
     const failure =
       document.querySelector("#resistance-design-failure")?.value || "underestimated high-resistance cell";
     const improvement =
-      document.querySelector("#resistance-design-improvement")?.value || "adding a forward-model consistency loss";
+      document.querySelector("#resistance-design-improvement")?.value || "adding Jacobian-guided measurement paths";
     const validation =
       document.querySelector("#resistance-design-validation")?.value || "a physical resistor-array test";
     const output = document.querySelector("#resistance-project-plan-output");
@@ -880,8 +880,8 @@ if (resistanceProjectPlanButton) {
       <strong>Draft inverse-sensor project plan</strong>
       <p><b>Question:</b> Can ${formulation} reconstruct a hidden resistance map for the ${arraySize} from limited current measurements?</p>
       <p><b>Audit target:</b> Focus on ${failure}. Include one true map, predicted map, and absolute-error map instead of reporting only average accuracy.</p>
-      <p><b>Scaling task:</b> If moving beyond 3x3, update the output dimension to n*n cells, regenerate or load matching current data, and check whether extra row, column, diagonal, or path measurements are needed.</p>
-      <p><b>Improvement:</b> Test ${improvement}, then compare MAE, high-resistance recall, and exact-map accuracy against the baseline.</p>
+      <p><b>Scaling task:</b> If moving beyond 8x8, preserve the graph-building rule, regenerate or load matching current data, and use Jacobian diagnostics to check whether the measurement protocol remains informative.</p>
+      <p><b>Improvement:</b> Test ${improvement}, then compare MAE, high-resistance recall, cell accuracy, and robustness against the data-only baseline.</p>
       <p><b>Validation:</b> Use ${validation} before claiming the predicted resistance map reflects real cell growth, local coverage, or device behavior.</p>
     `;
   });
@@ -985,32 +985,66 @@ function updateMotionTest() {
 }
 
 const resistanceBaseMaps = {
-  2: [
-    [1.2, 2.4],
-    [1.7, 3.1],
-  ],
-  3: [
-    [2, 2, 2],
-    [2, 2, 2],
-    [110, 2, 2],
-  ],
-  4: [
-    [1.0, 1.5, 2.1, 2.8],
-    [1.4, 2.6, 3.8, 2.5],
-    [1.9, 2.4, 4.5, 3.2],
-    [2.3, 3.0, 3.6, 4.2],
+  8: [
+    [2, 2, 2, 2, 2, 2, 2, 2],
+    [2, 2, 2, 2, 2, 2, 2, 2],
+    [2, 100, 2, 2, 2, 2, 100, 2],
+    [2, 2, 2, 2, 2, 2, 2, 2],
+    [2, 2, 2, 2, 2, 2, 2, 2],
+    [2, 2, 2, 2, 100, 2, 2, 2],
+    [2, 2, 2, 2, 2, 2, 2, 2],
+    [100, 2, 2, 2, 2, 2, 2, 2],
   ],
 };
 
-let activeResistanceSize = 3;
+let activeResistanceSize = 8;
 
-const resistanceRealMetrics = {
-  mae: 4.86,
-  rmse: 14.61,
-  cellAccuracy: 0.976,
-  highRecall: 0.879,
-  highPrecision: 1.0,
-  exactMapAccuracy: 0.84,
+const resistanceModels = {
+  mlp: {
+    label: "Data-only MLP",
+    mae: 3.37,
+    rmse: 17.73,
+    highRecall: 0.0,
+    cellAccuracy: 0.967,
+    image: "assets/module4-mlp-8x8-examples.png",
+    logic:
+      "A fully connected network learns a direct global mapping from 64 currents to 64 resistances. It has no circuit loss and no explicit neighborhood structure.",
+    training:
+      "The MLP fits the dominant low-resistance state but misses rare high cells in the held-out sparse maps.",
+    caption:
+      "Data-only MLP examples. The baseline can predict common low cells while failing to recover rare high-resistance locations.",
+    predictedHigh: 22,
+  },
+  hybrid: {
+    label: "Hybrid GNN + Simon consistency",
+    mae: 0.069,
+    rmse: 0.383,
+    highRecall: 1.0,
+    cellAccuracy: 1.0,
+    image: "assets/module4-hybrid-gnn-examples.png",
+    logic:
+      "A V/I-derived physics proxy provides a rough map. A grid GNN exchanges information between neighboring cells and predicts local log-resistance corrections. Simon/KCL forward consistency is an additional training loss.",
+    training:
+      "The Hybrid GNN combines topology, sparse-high curriculum data, classification supervision, uncertainty learning, and forward consistency.",
+    caption:
+      "Hybrid examples. Columns show true R, physics proxy, corrected prediction, absolute error, and predicted uncertainty.",
+    predictedHigh: 98.1,
+  },
+  mna: {
+    label: "Dynamic GNN + independent MNA",
+    mae: 0.116,
+    rmse: 0.397,
+    highRecall: 1.0,
+    cellAccuracy: 1.0,
+    image: "assets/module4-mna-gnn-examples.png",
+    logic:
+      "A topology-aware GNN predicts local impedance parameters directly from electrical observations. An independently written incidence-MNA solver recomputes boundary currents for the physics loss; the schema is ready for future complex frequency data.",
+    training:
+      "The present DC run trains resistance only. Inductance and capacitance heads remain reserved until phase and frequency measurements are available.",
+    caption:
+      "MNA-GNN examples. Columns show true R, DC-GNN prediction, absolute error, and log-resistance uncertainty.",
+    predictedHigh: 97.8,
+  },
 };
 
 function cloneResistanceMap(size) {
@@ -1042,10 +1076,11 @@ function renderResistanceGrid(container, map) {
       row.map((value, colIndex) => {
         const intensity = (value - min) / range;
         const alpha = 0.18 + intensity * 0.72;
+        const compactLabel = map.length > 4 ? "" : `<span>R${rowIndex + 1}C${colIndex + 1}</span>`;
         return `
           <div class="resistance-cell" style="--cell-alpha:${alpha.toFixed(2)}">
             <strong>${value.toFixed(1)}</strong>
-            <span>R${rowIndex + 1}C${colIndex + 1}</span>
+            ${compactLabel}
           </div>
         `;
       })
@@ -1094,88 +1129,93 @@ document.querySelectorAll("[data-array-size]").forEach((button) => {
 
 setResistanceSize(activeResistanceSize);
 
-const resistanceNoise = document.querySelector("#resistance-noise");
-if (resistanceNoise) {
-  resistanceNoise.addEventListener("input", () => {
-    document.querySelector("#resistance-noise-label").textContent = `${resistanceNoise.value}%`;
-  });
+function getSelectedResistanceModel() {
+  return document.querySelector('input[name="resistance-model"]:checked')?.value || "hybrid";
 }
 
-const resistanceSamples = document.querySelector("#resistance-samples");
-if (resistanceSamples) {
-  resistanceSamples.addEventListener("input", () => {
-    document.querySelector("#resistance-samples-label").textContent = resistanceSamples.value;
-  });
+function updateResistanceModelLogic() {
+  const modelKey = getSelectedResistanceModel();
+  const model = resistanceModels[modelKey];
+  const logic = document.querySelector("#resistance-model-logic");
+  if (!logic) return;
+  logic.innerHTML = `
+    <strong>${model.label}</strong>
+    <p>${model.logic}</p>
+  `;
 }
+
+document.querySelectorAll('input[name="resistance-model"]').forEach((input) => {
+  input.addEventListener("change", updateResistanceModelLogic);
+});
+
+updateResistanceModelLogic();
 
 const resistanceButton = document.querySelector("#run-resistance-sim");
 if (resistanceButton) {
   resistanceButton.addEventListener("click", () => {
-    const model = document.querySelector('input[name="resistance-model"]:checked').value;
-    const noise = Number(document.querySelector("#resistance-noise")?.value || 0);
-    const samples = Number(document.querySelector("#resistance-samples")?.value || 10000);
-    runResistancePrototype({ size: activeResistanceSize, model, noise, samples });
+    runResistancePrototype({ size: activeResistanceSize, model: getSelectedResistanceModel() });
   });
 }
 
-function runResistancePrototype({ size, model, noise, samples }) {
+function runResistancePrototype({ size, model }) {
   const meter = document.querySelector("#resistance-meter");
   const copy = document.querySelector("#resistance-training-copy");
+  const selected = resistanceModels[model];
   meter.style.width = "0";
-  copy.textContent = "Loading the trained MLP conductance-regression result from the held-out test set...";
+  copy.textContent = `Loading the saved ${selected.label} checkpoint and held-out metrics...`;
 
   window.setTimeout(() => {
     meter.style.width = "38%";
-    copy.textContent = "Input: 9 current measurements. Output: 9 predicted resistance values reshaped into a 3x3 map.";
+    copy.textContent = "Input: 64 pairwise currents. Output: 64 resistance estimates reshaped into an 8x8 map.";
   }, 450);
 
   window.setTimeout(() => {
     meter.style.width = "72%";
-    copy.textContent = "The best current setting uses conductance transformation because current is physically closer to 1/R.";
+    copy.textContent = selected.logic;
   }, 1000);
 
   window.setTimeout(() => {
     meter.style.width = "100%";
-    copy.textContent = "Trained result loaded. Open the Test step to inspect reconstruction metrics and error heatmaps.";
-    labState.resistance = { size, model, noise, samples };
+    copy.textContent = `${selected.training} Open Test for the held-out reconstruction.`;
+    labState.resistance = { size, model };
     updateResistanceTest();
   }, 1550);
 }
 
-function makePredictedResistanceMap(map, model, noise, samples) {
-  const modelPenalty = model === "linear" ? 0.28 : model === "mlp" ? 0.16 : 0.1;
-  const noisePenalty = noise / 100;
-  const sampleBoost = Math.min(samples / 2000, 1) * 0.08;
-  const errorScale = Math.max(0.04, modelPenalty + noisePenalty - sampleBoost);
+function makePredictedResistanceMap(map, modelKey) {
+  const model = resistanceModels[modelKey];
   return map.map((row, rowIndex) =>
     row.map((value, colIndex) => {
+      if (value > 50) return modelKey === "mlp" ? model.predictedHigh : model.predictedHigh - ((rowIndex + colIndex) % 2) * 0.5;
       const direction = (rowIndex + colIndex) % 2 === 0 ? 1 : -1;
-      const offset = direction * errorScale * (0.8 + rowIndex * 0.15 + colIndex * 0.1);
-      return Math.max(0.4, value + offset);
+      const lowError = modelKey === "mlp" ? 0.08 : modelKey === "hybrid" ? 0.01 : 0.04;
+      return Math.max(0.4, value + direction * lowError);
     })
   );
 }
 
 function updateResistanceTest() {
   if (!labState.resistance) return;
-  const trueMap = cloneResistanceMap(3);
-  const predictedMap = [
-    [2, 2, 2],
-    [2, 2, 2],
-    [100, 2, 2],
-  ];
+  const modelKey = labState.resistance.model;
+  const model = resistanceModels[modelKey];
+  const trueMap = cloneResistanceMap(8);
+  const predictedMap = makePredictedResistanceMap(trueMap, modelKey);
 
-  document.querySelector("#resistance-test-run-pill").textContent = "MLP + conductance target";
+  document.querySelector("#resistance-test-run-pill").textContent = model.label;
   document.querySelector("#resistance-test-run-pill").classList.add("ready");
   document.querySelector("#resistance-run-summary").innerHTML = `
     <strong>Held-out test result</strong>
-    <p>Input: 9 measured current values. Output: 3x3 local resistance map. The model predicts concrete resistance values, then we evaluate high/low localization.</p>
+    <p>Input: 64 measured current values. Output: 8x8 local resistance map. Regression error and high/low localization are evaluated separately.</p>
   `;
-  document.querySelector("#resistance-mae").textContent = `${resistanceRealMetrics.mae.toFixed(2)} ohm`;
-  document.querySelector("#resistance-pattern").textContent = resistanceRealMetrics.highRecall.toFixed(3);
-  document.querySelector("#resistance-uncertainty").textContent = resistanceRealMetrics.exactMapAccuracy.toFixed(3);
+  document.querySelector("#resistance-mae").textContent = `${model.mae.toFixed(3)} ohm`;
+  document.querySelector("#resistance-pattern").textContent = model.highRecall.toFixed(3);
+  document.querySelector("#resistance-uncertainty").textContent = model.cellAccuracy.toFixed(3);
   document.querySelector("#resistance-test-copy").textContent =
-    "The model usually finds high-resistance cells with high precision, but some high cells are still underestimated when several high-resistance regions appear in the same map.";
+    model.training;
+  const image = document.querySelector("#resistance-result-image");
+  image.src = model.image;
+  image.alt = `${model.label} held-out reconstruction examples`;
+  document.querySelector("#resistance-result-caption").textContent = model.caption;
   renderResistanceGrid(document.querySelector("#true-resistance-grid"), trueMap);
   renderResistanceGrid(document.querySelector("#predicted-resistance-grid"), predictedMap);
 }

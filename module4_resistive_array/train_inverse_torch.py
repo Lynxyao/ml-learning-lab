@@ -11,6 +11,7 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from resistance_dataset import load_npz, split_and_scale, unscale_maps
 from resistance_models import build_model
+from physics_torch import forward_measurements_from_maps, measurement_matrix
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -60,6 +61,12 @@ def main() -> None:
     parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--hidden_size", type=int, default=96)
     parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument(
+        "--physics_loss_weight",
+        type=float,
+        default=0.0,
+        help="Weight for forward-consistency loss. Use 0 for the original supervised-only model.",
+    )
     parser.add_argument("--seed", type=int, default=7)
     args = parser.parse_args()
 
@@ -79,6 +86,11 @@ def main() -> None:
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
     loss_fn = nn.MSELoss()
     train_loader = make_loader(data.x_train, data.y_train, args.batch_size, shuffle=True)
+    physics_matrix = measurement_matrix(grid_size, device)
+    x_mean = torch.tensor(data.x_mean, dtype=torch.float32, device=device)
+    x_std = torch.tensor(data.x_std, dtype=torch.float32, device=device)
+    y_mean = torch.tensor(data.y_mean, dtype=torch.float32, device=device)
+    y_std = torch.tensor(data.y_std, dtype=torch.float32, device=device)
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     ckpt_dir = args.output_dir / "checkpoints"
@@ -90,14 +102,28 @@ def main() -> None:
     for epoch in range(1, args.epochs + 1):
         model.train()
         losses = []
+        supervised_losses = []
+        physics_losses = []
         for xb, yb in train_loader:
             xb, yb = xb.to(device), yb.to(device)
             optimizer.zero_grad()
             pred = model(xb)
-            loss = loss_fn(pred, yb)
+            supervised_loss = loss_fn(pred, yb)
+            physics_loss = torch.tensor(0.0, dtype=torch.float32, device=device)
+            if args.physics_loss_weight > 0:
+                pred_physical = pred * y_std + y_mean
+                pred_measurements = forward_measurements_from_maps(pred_physical, physics_matrix)
+                true_measurements = xb * x_std + x_mean
+                physics_loss = loss_fn(
+                    (pred_measurements - x_mean) / x_std,
+                    (true_measurements - x_mean) / x_std,
+                )
+            loss = supervised_loss + args.physics_loss_weight * physics_loss
             loss.backward()
             optimizer.step()
             losses.append(float(loss.item()))
+            supervised_losses.append(float(supervised_loss.item()))
+            physics_losses.append(float(physics_loss.item()))
 
         val_pred_scaled = predict(model, data.x_val, args.batch_size, device)
         val_pred = unscale_maps(val_pred_scaled, data.y_mean, data.y_std, grid_size)
@@ -106,6 +132,8 @@ def main() -> None:
         row = {
             "epoch": float(epoch),
             "train_mse_scaled": float(np.mean(losses)),
+            "train_supervised_mse_scaled": float(np.mean(supervised_losses)),
+            "train_physics_mse_scaled": float(np.mean(physics_losses)),
             "val_mae_ohm": val_metrics["mae_ohm"],
             "val_rmse_ohm": val_metrics["rmse_ohm"],
             "val_pattern_correlation": val_metrics["mean_pattern_correlation"],
@@ -134,6 +162,7 @@ def main() -> None:
                     "y_mean": data.y_mean,
                     "y_std": data.y_std,
                     "data_npz": str(args.data_npz),
+                    "physics_loss_weight": args.physics_loss_weight,
                 },
                 best_path,
             )

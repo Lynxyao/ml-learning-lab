@@ -14,7 +14,8 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from resistance_models import MLPInverseModel
+from circuit_physics import ideal_pairwise_terminal_currents
+from resistance_models import build_model
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -43,6 +44,48 @@ def split_train_val(x: np.ndarray, y: np.ndarray, seed: int, val_fraction: float
     val_idx = idx[:n_val]
     train_idx = idx[n_val:]
     return x[train_idx], y[train_idx], x[val_idx], y[val_idx]
+
+
+def currents_from_maps(resistance: np.ndarray, voltage: float, batch_size: int = 256) -> np.ndarray:
+    chunks = []
+    with torch.no_grad():
+        for start in range(0, len(resistance), batch_size):
+            batch = torch.tensor(resistance[start : start + batch_size], dtype=torch.float32)
+            chunks.append(ideal_pairwise_terminal_currents(batch, voltage=voltage).numpy())
+    return np.concatenate(chunks, axis=0).astype(np.float32)
+
+
+def generate_sparse_curriculum(
+    n_samples: int,
+    n_cells: int,
+    low_ohm: float,
+    high_ohm: float,
+    max_high_cells: int,
+    voltage: float,
+    seed: int,
+    excluded_maps: np.ndarray | None,
+) -> tuple[np.ndarray, np.ndarray]:
+    if n_samples <= 0:
+        empty = np.empty((0, n_cells), dtype=np.float32)
+        return empty, empty
+    rng = np.random.default_rng(seed)
+    max_high_cells = min(max(max_high_cells, 1), n_cells)
+    excluded_keys: set[bytes] = set()
+    if excluded_maps is not None:
+        binary = np.where(excluded_maps > (low_ohm + high_ohm) / 2, high_ohm, low_ohm).astype(np.float32)
+        excluded_keys = {row.tobytes() for row in binary}
+    accepted = []
+    accepted_keys: set[bytes] = set()
+    while len(accepted) < n_samples:
+        values = np.full(n_cells, low_ohm, dtype=np.float32)
+        n_high = int(rng.integers(1, max_high_cells + 1))
+        values[rng.choice(n_cells, size=n_high, replace=False)] = high_ohm
+        key = values.tobytes()
+        if key not in excluded_keys and key not in accepted_keys:
+            accepted.append(values)
+            accepted_keys.add(key)
+    resistance = np.stack(accepted, axis=0)
+    return currents_from_maps(resistance, voltage=voltage), resistance
 
 
 def make_loader(x: np.ndarray, y: np.ndarray, batch_size: int, shuffle: bool) -> DataLoader:
@@ -104,66 +147,6 @@ def fit_conductance_forward_model(r_train: np.ndarray, i_train: np.ndarray) -> t
     return weights, bias
 
 
-def simon_forward_current_torch(
-    r_flat: torch.Tensor,
-    voltage: float = 5.0,
-    eps: float = 1e-6,
-) -> torch.Tensor:
-    """Differentiable PyTorch version of Simon's MATLAB forward model.
-
-    The resistor array is represented as a bipartite network between row
-    terminals and column terminals. For each row-column terminal pair, the
-    model applies [V, 0] on that pair while leaving all other terminals
-    floating, then uses Schur reduction of the Laplacian to compute the source
-    current. This mirrors main.m: build_L -> L_manipulate -> I_a(1).
-    """
-    if r_flat.ndim != 2:
-        raise ValueError("r_flat must have shape [batch, n_cells]")
-    batch_size, n_cells = r_flat.shape
-    grid_size = int(round(n_cells**0.5))
-    if grid_size * grid_size != n_cells:
-        raise ValueError("number of cells must be a square")
-
-    r = r_flat.reshape(batch_size, grid_size, grid_size)
-    g = 1.0 / torch.clamp(r, min=eps)
-    n_nodes = 2 * grid_size
-    laplacian = torch.zeros(
-        batch_size,
-        n_nodes,
-        n_nodes,
-        dtype=r_flat.dtype,
-        device=r_flat.device,
-    )
-
-    row_sum = g.sum(dim=2)
-    col_sum = g.sum(dim=1)
-    row_idx = torch.arange(grid_size, device=r_flat.device)
-    col_idx = torch.arange(grid_size, device=r_flat.device)
-    laplacian[:, row_idx, row_idx] = row_sum
-    laplacian[:, grid_size + col_idx, grid_size + col_idx] = col_sum
-    laplacian[:, :grid_size, grid_size:] = -g
-    laplacian[:, grid_size:, :grid_size] = -g.transpose(1, 2)
-
-    currents = []
-    va = torch.tensor([voltage, 0.0], dtype=r_flat.dtype, device=r_flat.device)
-    all_idx = torch.arange(n_nodes, device=r_flat.device)
-    for i in range(grid_size):
-        for j in range(grid_size):
-            alpha = torch.tensor([i, grid_size + j], dtype=torch.long, device=r_flat.device)
-            beta = all_idx[(all_idx != alpha[0]) & (all_idx != alpha[1])]
-
-            l_aa = laplacian[:, alpha][:, :, alpha]
-            l_ab = laplacian[:, alpha][:, :, beta]
-            l_ba = laplacian[:, beta][:, :, alpha]
-            l_bb = laplacian[:, beta][:, :, beta]
-            solved = torch.linalg.solve(l_bb, l_ba)
-            l_red = l_aa - torch.bmm(l_ab, solved)
-            ia = torch.matmul(l_red, va)
-            currents.append(ia[:, 0])
-
-    return torch.stack(currents, dim=1)
-
-
 @torch.no_grad()
 def predict(model: nn.Module, x: np.ndarray, batch_size: int, device: torch.device) -> np.ndarray:
     model.eval()
@@ -186,6 +169,7 @@ def low_high_metrics(true_r: np.ndarray, pred_r: np.ndarray, threshold: float) -
         "low_recall": float((pred_low[low_mask]).mean()) if low_mask.any() else 0.0,
         "high_recall": float((~pred_low[high_mask]).mean()) if high_mask.any() else 0.0,
         "high_precision": float((high_mask[~pred_low]).mean()) if (~pred_low).any() else 0.0,
+        "exact_map_accuracy": float(exact_map.mean()),
         "exact_3x3_map_accuracy": float(exact_map.mean()),
     }
 
@@ -278,15 +262,18 @@ def save_prediction_csv(path: Path, true_r: np.ndarray, pred_r: np.ndarray, curr
 
 def save_prediction_figure(path: Path, true_r: np.ndarray, pred_r: np.ndarray, n_examples: int = 8) -> None:
     n = min(n_examples, len(true_r))
-    fig, axes = plt.subplots(n, 3, figsize=(8.2, 2.2 * n), constrained_layout=True)
+    grid_size = int(round(true_r.shape[1] ** 0.5))
+    if grid_size * grid_size != true_r.shape[1]:
+        raise ValueError("prediction figure expects square resistance maps")
+    fig, axes = plt.subplots(n, 3, figsize=(8.8, 2.45 * n), constrained_layout=True)
     if n == 1:
         axes = axes.reshape(1, -1)
     value_vmin = float(min(true_r[:n].min(), pred_r[:n].min()))
     value_vmax = float(max(true_r[:n].max(), pred_r[:n].max()))
     error_vmax = float(np.abs(pred_r[:n] - true_r[:n]).max())
     for i in range(n):
-        true_map = true_r[i].reshape(3, 3)
-        pred_map = pred_r[i].reshape(3, 3)
+        true_map = true_r[i].reshape(grid_size, grid_size)
+        pred_map = pred_r[i].reshape(grid_size, grid_size)
         err_map = np.abs(pred_map - true_map)
         panels = [(true_map, "True R"), (pred_map, "Predicted R"), (err_map, "Absolute error")]
         for j, (arr, title) in enumerate(panels):
@@ -297,8 +284,8 @@ def save_prediction_figure(path: Path, true_r: np.ndarray, pred_r: np.ndarray, n
             axes[i, j].set_title(f"{title}\nSample {i}")
             axes[i, j].set_xticks([])
             axes[i, j].set_yticks([])
-            for row in range(3):
-                for col in range(3):
+            for row in range(grid_size):
+                for col in range(grid_size):
                     axes[i, j].text(
                         col,
                         row,
@@ -306,7 +293,7 @@ def save_prediction_figure(path: Path, true_r: np.ndarray, pred_r: np.ndarray, n
                         ha="center",
                         va="center",
                         color="white" if arr[row, col] > (arr.max() + arr.min()) / 2 else "black",
-                        fontsize=7,
+                        fontsize=7 if grid_size <= 4 else 4.5,
                     )
             fig.colorbar(im, ax=axes[i, j], fraction=0.046, pad=0.04)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -346,7 +333,7 @@ def train_model(
             current_loss = torch.tensor(0.0, dtype=torch.float32, device=device)
             if (
                 args.task == "regression"
-                and args.physics_loss_weight > 0
+                and args.forward_consistency_weight > 0
                 and y_mean_t is not None
                 and y_std_t is not None
                 and x_mean_t is not None
@@ -359,10 +346,10 @@ def train_model(
                     pred_min=args.prediction_min,
                     pred_max=args.prediction_max,
                 )
-                pred_current_raw = simon_forward_current_torch(pred_r, voltage=args.voltage)
+                pred_current_raw = ideal_pairwise_terminal_currents(pred_r, voltage=args.voltage)
                 pred_current_scaled = (pred_current_raw - x_mean_t) / x_std_t
                 current_loss = loss_fn(pred_current_scaled, xb)
-            loss = target_loss + args.physics_loss_weight * current_loss
+            loss = target_loss + args.forward_consistency_weight * current_loss
             loss.backward()
             optimizer.step()
             losses.append(float(loss.item()))
@@ -383,7 +370,7 @@ def train_model(
                 f"Epoch {epoch:03d}/{args.epochs} "
                 f"train_loss={row['train_loss']:.4f} "
                 f"target={row['target_loss']:.4f} "
-                f"physics={row['current_loss']:.4f} "
+                f"forward_consistency={row['current_loss']:.4f} "
                 f"val_loss={row['val_loss']:.4f}"
             )
     return history
@@ -391,17 +378,25 @@ def train_model(
 
 def real_csv_mode_name(args: argparse.Namespace) -> str:
     if args.task == "classification":
-        return f"{args.task}_{args.positive_state}"
-    if args.physics_loss_weight > 0:
-        weight_tag = str(args.physics_loss_weight).replace(".", "p")
-        return f"regression_{args.target_transform}_physics_w{weight_tag}"
-    return f"regression_{args.target_transform}"
+        return f"{args.task}_{args.positive_state}_{args.model}"
+    forward_weight = getattr(
+        args,
+        "forward_consistency_weight",
+        getattr(args, "physics_loss_weight", 0.0),
+    )
+    curriculum_samples = int(getattr(args, "synthetic_sparse_samples", 0) or 0)
+    curriculum_tag = f"_curriculum{curriculum_samples}" if curriculum_samples > 0 else ""
+    if forward_weight > 0:
+        weight_tag = str(forward_weight).replace(".", "p")
+        return f"regression_{args.target_transform}_{args.model}_forward_w{weight_tag}{curriculum_tag}"
+    return f"regression_{args.target_transform}_{args.model}{curriculum_tag}"
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train Module 4 inverse models on Simon's real CSV training files.")
     parser.add_argument("--data_dir", type=Path, default=DEFAULT_DATA_DIR)
     parser.add_argument("--output_dir", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--model", choices=["mlp", "grid_gnn"], default="mlp")
     parser.add_argument("--task", choices=["regression", "classification"], default="regression")
     parser.add_argument("--positive_state", choices=["high", "low"], default="high")
     parser.add_argument("--target_transform", choices=["raw", "log", "conductance"], default="conductance")
@@ -412,13 +407,33 @@ def main() -> None:
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument(
+        "--max_train_samples",
+        type=int,
+        default=None,
+        help="Optional quick diagnostic limit before the train/validation split.",
+    )
+    parser.add_argument(
+        "--forward_consistency_weight",
         "--physics_loss_weight",
+        dest="forward_consistency_weight",
         type=float,
-        default=0.1,
-        help="Add Simon forward-current consistency loss for regression. Use 0 to disable.",
+        default=0.0,
+        help=(
+            "Weight for consistency with the unvalidated ideal row-column circuit model. "
+            "The old --physics_loss_weight name remains as a compatibility alias."
+        ),
     )
     parser.add_argument("--prediction_min", type=float, default=1.0)
     parser.add_argument("--prediction_max", type=float, default=110.0)
+    parser.add_argument(
+        "--synthetic_sparse_samples",
+        type=int,
+        default=0,
+        help="Optional sparse 1/100-ohm curriculum samples. This changes data only, not the loss.",
+    )
+    parser.add_argument("--synthetic_max_high_cells", type=int, default=8)
+    parser.add_argument("--synthetic_low_ohm", type=float, default=1.0)
+    parser.add_argument("--synthetic_high_ohm", type=float, default=100.0)
     parser.add_argument(
         "--voltage",
         type=float,
@@ -427,9 +442,40 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
+
     i_train = load_csv(args.data_dir / "I_train.csv")
     r_train = load_csv(args.data_dir / "R_train.csv")
+    if args.max_train_samples is not None and args.max_train_samples < len(i_train):
+        rng = np.random.default_rng(args.seed)
+        subset_idx = rng.choice(len(i_train), size=args.max_train_samples, replace=False)
+        i_train = i_train[subset_idx]
+        r_train = r_train[subset_idx]
+    original_sample_count = len(i_train)
     x_train_raw, y_train_raw, x_val_raw, y_val_raw = split_train_val(i_train, r_train, args.seed)
+    if args.synthetic_sparse_samples > 0:
+        r_test_path = args.data_dir / "R_test.csv"
+        excluded_maps = load_csv(r_test_path) if r_test_path.exists() else None
+        sparse_i, sparse_r = generate_sparse_curriculum(
+            args.synthetic_sparse_samples,
+            r_train.shape[1],
+            args.synthetic_low_ohm,
+            args.synthetic_high_ohm,
+            args.synthetic_max_high_cells,
+            args.voltage,
+            args.seed + 101,
+            excluded_maps,
+        )
+        sparse_train_i, sparse_train_r, sparse_val_i, sparse_val_r = split_train_val(
+            sparse_i, sparse_r, args.seed
+        )
+        x_train_raw = np.concatenate([x_train_raw, sparse_train_i], axis=0)
+        y_train_raw = np.concatenate([y_train_raw, sparse_train_r], axis=0)
+        x_val_raw = np.concatenate([x_val_raw, sparse_val_i], axis=0)
+        y_val_raw = np.concatenate([y_val_raw, sparse_val_r], axis=0)
     x_train, x_val, _, x_mean, x_std = standardize_train_test(x_train_raw, x_val_raw, x_val_raw)
 
     y_mean = None
@@ -456,7 +502,12 @@ def main() -> None:
         loss_fn = nn.MSELoss()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = MLPInverseModel(input_dim=x_train.shape[1], output_dim=r_train.shape[1], hidden_size=args.hidden_size).to(device)
+    model = build_model(
+        args.model,
+        input_dim=x_train.shape[1],
+        output_dim=r_train.shape[1],
+        hidden_size=args.hidden_size,
+    ).to(device)
     train_loader = make_loader(x_train, y_train, args.batch_size, shuffle=True)
     history = train_model(
         model,
@@ -480,6 +531,7 @@ def main() -> None:
 
     checkpoint = {
         "model_state": model.state_dict(),
+        "model_type": args.model,
         "input_dim": x_train.shape[1],
         "output_dim": r_train.shape[1],
         "hidden_size": args.hidden_size,
@@ -487,11 +539,17 @@ def main() -> None:
         "positive_state": args.positive_state,
         "target_transform": args.target_transform,
         "threshold": args.threshold,
-        "physics_loss_weight": args.physics_loss_weight,
+        "forward_consistency_weight": args.forward_consistency_weight,
+        "physics_loss_weight": args.forward_consistency_weight,
         "prediction_min": args.prediction_min,
         "prediction_max": args.prediction_max,
         "voltage": args.voltage,
         "seed": args.seed,
+        "max_train_samples": args.max_train_samples,
+        "synthetic_sparse_samples": args.synthetic_sparse_samples,
+        "synthetic_max_high_cells": args.synthetic_max_high_cells,
+        "synthetic_low_ohm": args.synthetic_low_ohm,
+        "synthetic_high_ohm": args.synthetic_high_ohm,
         "data_dir": str(args.data_dir),
         "x_mean": x_mean,
         "x_std": x_std,
@@ -512,10 +570,24 @@ def main() -> None:
 
     torch.save(checkpoint, checkpoint_path)
     (args.output_dir / f"{mode_name}_history.json").write_text(json.dumps(history, indent=2), encoding="utf-8")
+    training_summary = {
+        "original_samples_used": original_sample_count,
+        "synthetic_sparse_samples": args.synthetic_sparse_samples,
+        "combined_train_samples": len(x_train_raw),
+        "combined_validation_samples": len(x_val_raw),
+        "forward_consistency_weight": args.forward_consistency_weight,
+        "physics_informed_training": args.forward_consistency_weight > 0,
+        "exact_test_maps_excluded_from_curriculum": args.synthetic_sparse_samples > 0,
+    }
+    (args.output_dir / f"{mode_name}_training_data_summary.json").write_text(
+        json.dumps(training_summary, indent=2), encoding="utf-8"
+    )
 
     print("\nData summary")
     print(f"I_train shape={i_train.shape}, range=({i_train.min():.4f}, {i_train.max():.4f})")
     print(f"R_train shape={r_train.shape}, range=({r_train.min():.4f}, {r_train.max():.4f})")
+    print(f"Combined train/validation={len(x_train_raw)}/{len(x_val_raw)}")
+    print(f"Physics-informed loss active={args.forward_consistency_weight > 0}")
     print(f"\nSaved training history to {args.output_dir / f'{mode_name}_history.json'}")
     print(f"Saved checkpoint to {checkpoint_path}")
 

@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from resistance_models import MLPInverseModel
+from resistance_models import build_model
 from train_real_csv_torch import (
     DEFAULT_OUTPUT,
     choose_probability_threshold,
@@ -35,7 +35,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.checkpoint is None:
-        default_checkpoint = args.output_dir / "checkpoints" / "regression_conductance_physics_w0p1_model.pt"
+        default_checkpoint = args.output_dir / "checkpoints" / "regression_conductance_mlp_model.pt"
         args.checkpoint = default_checkpoint
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -52,7 +52,9 @@ def main() -> None:
     x_val = (x_val_raw - checkpoint["x_mean"]) / checkpoint["x_std"]
     x_test = (i_test - checkpoint["x_mean"]) / checkpoint["x_std"]
 
-    model = MLPInverseModel(
+    model_type = str(checkpoint.get("model_type", "mlp"))
+    model = build_model(
+        model_type,
         input_dim=int(checkpoint["input_dim"]),
         output_dim=int(checkpoint["output_dim"]),
         hidden_size=int(checkpoint["hidden_size"]),
@@ -97,21 +99,31 @@ def main() -> None:
         )
         metrics = regression_metrics(r_test, pred_r, threshold)
         metrics["target_transform"] = target_transform
-        metrics["physics_loss_weight"] = float(checkpoint["physics_loss_weight"])
+        forward_weight = float(
+            checkpoint.get("forward_consistency_weight", checkpoint.get("physics_loss_weight", 0.0))
+        )
+        metrics["forward_consistency_weight"] = forward_weight
         metrics["prediction_min"] = float(checkpoint["prediction_min"])
         metrics["prediction_max"] = float(checkpoint["prediction_max"])
         metrics["voltage"] = float(checkpoint["voltage"])
-        if float(checkpoint["physics_loss_weight"]) > 0:
-            metrics["physics_forward_model"] = "simon_laplacian_schur"
+        if forward_weight > 0:
+            metrics["forward_consistency_model"] = "ideal_pairwise_terminal_kcl_laplacian"
+            metrics["forward_model_experimentally_validated"] = False
         scan_rows = []
         val_scan_rows = []
 
     mode_args = argparse.Namespace(**{key: checkpoint[key] for key in checkpoint if key in {
         "task",
+        "model",
+        "model_type",
         "positive_state",
         "target_transform",
+        "forward_consistency_weight",
         "physics_loss_weight",
+        "synthetic_sparse_samples",
     }})
+    if not hasattr(mode_args, "model"):
+        mode_args.model = model_type
     mode_name = real_csv_mode_name(mode_args)
 
     args.output_dir.mkdir(parents=True, exist_ok=True)

@@ -6,12 +6,12 @@ The public-facing design is based on interactive saved experiments. A local
 backend can optionally run realtime PyTorch training for instructor demos,
 development, and generating new saved results.
 
-The project currently contains two guided modules:
+The project currently contains four guided modules:
 
 - Module 1: WFM image-to-image learning with a pix2pix-style conditional GAN workflow.
 - Module 2: ECG time-series classification with a 1D CNN workflow using MIT-BIH beat segments.
 - Module 3: Motion/fall-risk sequence modeling and Holomotion-style feature interpretation.
-- Module 4: Resistive array inverse modeling for local sensor-map reconstruction.
+- Module 4: 8x8 resistive-array inverse modeling with an MLP baseline, Hybrid GNN, independent MNA-GNN, and Jacobian diagnostics.
 
 ## Current Prototype
 
@@ -134,6 +134,8 @@ Recommended external storage:
 
 - Module 1 student-facing website flow: in progress.
 - Module 2 student-facing website flow: in progress.
+- Module 3 student-facing motion/fall workflow: in progress.
+- Module 4 8x8 three-model comparison and research evidence page: available.
 - References page: includes WFM source paper context.
 - Realtime ECG training backend: first local prototype.
 - Realtime WFM training backend: first local prototype.
@@ -144,3 +146,5 @@ Recommended external storage:
 - Add WFM image pair splitter interaction.
 - Add ECG class imbalance simulator.
 - Add student prediction prompts before metric reveal.
+- Validate Module 4 under noise, component tolerance, missing channels, and measured hardware data.
+- Test a variable-size graph representation across multiple n x n arrays.

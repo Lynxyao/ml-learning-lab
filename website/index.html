@@ -84,7 +84,7 @@
           <article class="choice-card">
             <span>Module 4 prototype</span>
             <h2>Resistive Array Inverse Modeling</h2>
-            <p>Use current measurements to reconstruct a hidden 3x3 resistance map for sensor-based cell monitoring.</p>
+            <p>Compare data-only and physics-informed models that reconstruct a hidden 8x8 resistance map from 64 current measurements.</p>
             <button class="secondary-action" data-target="resistance">Start module</button>
           </article>
         </div>
@@ -1148,9 +1148,10 @@
           <div>
             <h1 id="resistance-title">Can ML reconstruct a local resistance map from limited electrical measurements?</h1>
             <p>
-              Students explore a 3x3 resistive sensor array. The learning goal is inverse modeling:
-              using measurable current signals under fixed voltage to reconstruct hidden local
-              resistance values that may later correspond to cell coverage or local growth patterns.
+              Students explore an 8x8 resistive sensor array and compare three inverse models:
+              a data-only MLP, a Hybrid GNN with Simon-model consistency, and an independently
+              formulated MNA-GNN. The goal is to reconstruct 64 hidden local resistance values
+              from 64 measurable row-column current responses.
             </p>
           </div>
           <div class="status-pill">Inverse sensing module</div>
@@ -1161,6 +1162,7 @@
           <button class="lab-tab" data-module="resistance" data-step="data">Data</button>
           <button class="lab-tab" data-module="resistance" data-step="train">Train</button>
           <button class="lab-tab" data-module="resistance" data-step="test">Test</button>
+          <button class="lab-tab" data-module="resistance" data-step="research">Research</button>
           <button class="lab-tab" data-module="resistance" data-step="reflect">Reflect</button>
           <button class="lab-tab" data-module="resistance" data-step="quiz">Quiz</button>
           <button class="lab-tab" data-module="resistance" data-step="project">Mini Project</button>
@@ -1173,8 +1175,9 @@
               <p>
                 In a cell-monitoring resistive array, each local region may have a different resistance.
                 Directly and continuously measuring every internal point may be difficult. A more practical
-                setup measures electrical responses such as current under fixed voltage. The ML problem is
-                to infer the hidden 3x3 resistance pattern from those measurable current signals.
+                setup measures electrical responses such as current under fixed voltage. The current
+                8x8 prototype treats 64 pairwise row-column currents as observations and reconstructs
+                a 64-cell resistance map.
               </p>
               <div class="check-box">
                 <strong>Before you train</strong>
@@ -1194,7 +1197,7 @@
                 </div>
                 <div>
                   <strong>Research link</strong>
-                  <p>Could fewer electrical measurements support real-time monitoring of cell growth or local abnormal regions?</p>
+                  <p>Can topology and circuit constraints improve reconstruction without assuming that one simulator is experimental truth?</p>
                 </div>
               </div>
             </article>
@@ -1207,7 +1210,7 @@
               <div class="panel-heading">
                 <h2>Training Data Structure</h2>
                 <div class="segment-row" role="group" aria-label="Choose array size">
-                  <button class="segment-button active" data-array-size="3">3x3 example</button>
+                  <button class="segment-button active" data-array-size="8">8x8 prototype</button>
                 </div>
               </div>
               <div class="resistance-grid" id="resistance-grid" aria-label="Resistance heatmap"></div>
@@ -1217,9 +1220,10 @@
               <h2>Input and Output</h2>
               <table class="reference-table">
                 <tbody>
-                  <tr><th>Input X</th><td>9 current measurements from the resistive array under fixed voltage.</td></tr>
-                  <tr><th>Target y</th><td>9 resistance values reshaped into a 3x3 local resistance map.</td></tr>
+                  <tr><th>Input X</th><td>64 pairwise row-column current measurements under fixed excitation.</td></tr>
+                  <tr><th>Target y</th><td>64 resistance values reshaped into an 8x8 local resistance map.</td></tr>
                   <tr><th>Model task</th><td>Regression: predict concrete resistance values, then evaluate high/low localization.</td></tr>
+                  <tr><th>Training distribution</th><td>10,000 original maps plus 4,000 sparse-high curriculum maps; exact test maps are excluded.</td></tr>
                   <tr><th>Why this matters</th><td>The reconstruction can indicate where the array has changed, which may later connect to local cell growth or abnormal coverage.</td></tr>
                 </tbody>
               </table>
@@ -1234,26 +1238,23 @@
         <div class="lab-step" data-panel="resistance-train">
           <div class="content-grid three-col">
             <article class="lesson-panel">
-              <h2>Choose Modeling Idea</h2>
+              <h2>Choose a Trained Model</h2>
               <div class="option-list">
-                <label><input type="radio" name="resistance-model" value="linear" /> Linear baseline</label>
-                <label><input type="radio" name="resistance-model" value="mlp" checked /> MLP regression model</label>
-                <label><input type="radio" name="resistance-model" value="gnn" /> Future graph-based model</label>
+                <label><input type="radio" name="resistance-model" value="mlp" /> Data-only MLP baseline</label>
+                <label><input type="radio" name="resistance-model" value="hybrid" checked /> Hybrid GNN + Simon consistency</label>
+                <label><input type="radio" name="resistance-model" value="mna" /> Dynamic GNN + independent MNA</label>
               </div>
             </article>
             <article class="lesson-panel">
               <h2>Training Setup</h2>
-              <div class="mapping-list">
-                <div><strong>Best current setting</strong><p>MLP regression with conductance-based target transformation.</p></div>
-                <div><strong>Physics link</strong><p>Under fixed voltage, current is more directly related to conductance, or 1/R, than to raw resistance R.</p></div>
-              </div>
-              <button class="secondary-action" id="run-resistance-sim">Load trained MLP result</button>
+              <div class="model-logic" id="resistance-model-logic"></div>
+              <button class="secondary-action" id="run-resistance-sim">Load selected result</button>
             </article>
             <article class="lesson-panel training-output">
               <h2>Training Observation</h2>
               <div class="training-meter"><span id="resistance-meter"></span></div>
               <p id="resistance-training-copy">
-                Load the current trained result to inspect how the model reconstructs high-resistance regions from current measurements.
+                Select a model to inspect its inputs, inductive bias, physics constraint, and held-out result.
               </p>
             </article>
           </div>
@@ -1268,12 +1269,12 @@
               </div>
               <div class="run-summary" id="resistance-run-summary">
                 <strong>Waiting for training</strong>
-                <p>Go to Train and load the current MLP inverse-model result.</p>
+                <p>Go to Train, choose one of the three models, and load its held-out result.</p>
               </div>
               <div class="motion-metrics">
                 <div><span>MAE</span><strong id="resistance-mae">--</strong></div>
                 <div><span>High recall</span><strong id="resistance-pattern">--</strong></div>
-                <div><span>Exact map accuracy</span><strong id="resistance-uncertainty">--</strong></div>
+                <div><span>Cell accuracy</span><strong id="resistance-uncertainty">--</strong></div>
               </div>
             </article>
             <article class="lesson-panel">
@@ -1290,11 +1291,89 @@
               </div>
               <p id="resistance-test-copy">After loading the result, compare whether the model localizes high-resistance regions rather than only matching average resistance.</p>
               <div class="result-figure-panel">
-                <img src="assets/module4-regression-conductance-examples.png" alt="Module 4 true resistance, predicted resistance, and absolute error examples" />
-                <p>Rows show held-out test samples. Left: true resistance map. Middle: MLP prediction. Right: absolute error.</p>
+                <img id="resistance-result-image" src="assets/module4-hybrid-gnn-examples.png" alt="Module 4 held-out resistance reconstruction examples" />
+                <p id="resistance-result-caption">Rows show held-out maps, physics proxy, Hybrid GNN prediction, absolute error, and predicted uncertainty.</p>
               </div>
             </article>
           </div>
+        </div>
+
+        <div class="lab-step" data-panel="resistance-research">
+          <div class="research-banner">
+            <div>
+              <span class="reference-tag">Current research status</span>
+              <h2>What is validated, and what is still open?</h2>
+            </div>
+            <span class="status-pill">Simulation-stage evidence</span>
+          </div>
+
+          <div class="evidence-strip">
+            <div><span>MLP MAE</span><strong>3.37 ohm</strong><small>Data-only baseline</small></div>
+            <div><span>Hybrid MAE</span><strong>0.069 ohm</strong><small>Simon consistency</small></div>
+            <div><span>MNA-GNN MAE</span><strong>0.116 ohm</strong><small>Independent physics</small></div>
+            <div><span>Jacobian rank</span><strong>64 / 64</strong><small>Tested operating points</small></div>
+          </div>
+
+          <div class="content-grid two-col research-grid">
+            <article class="lesson-panel">
+              <h2>Three Models, Three Roles</h2>
+              <table class="reference-table model-comparison-table">
+                <thead>
+                  <tr><th>Model</th><th>What it learns</th><th>Physics use</th><th>Result</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>MLP</td><td>Global current-to-map correlation</td><td>None during training</td><td>Missed rare high cells</td></tr>
+                  <tr><td>Hybrid GNN</td><td>Local correction to a V/I proxy</td><td>Simon/KCL forward consistency</td><td>Best present MAE</td></tr>
+                  <tr><td>MNA-GNN</td><td>Topology-aware local impedance</td><td>Independent incidence-MNA loss</td><td>Nearly equal accuracy; AC-ready</td></tr>
+                </tbody>
+              </table>
+              <div class="result-figure-panel compact-figure">
+                <img src="assets/module4-model-comparison.png" alt="Comparison of Hybrid GNN and MNA-GNN reconstruction metrics" />
+                <p>Both GNN routes localize the held-out high-resistance cells. The reported gain is not from physics loss alone: topology, curriculum sampling, class weighting, and the classification head also contribute.</p>
+              </div>
+            </article>
+
+            <article class="lesson-panel">
+              <h2>Validation Ladder</h2>
+              <ol class="validation-ladder">
+                <li><strong>Implementation agreement</strong><span>Simon and MNA solvers agree on 3,200 ideal-DC currents to numerical precision.</span></li>
+                <li><strong>Local identifiability</strong><span>The 8x8 Jacobian is full rank at tested points, but conditioning worsens for sparse patterns.</span></li>
+                <li><strong>Held-out reconstruction</strong><span>Both GNN models recover sparse high-state locations in the current simulated test set.</span></li>
+                <li><strong>Still required</strong><span>Noise, component tolerance, model mismatch, cross-size tests, and measured hardware ground truth.</span></li>
+              </ol>
+              <div class="boundary-note">
+                <strong>Interpretation boundary</strong>
+                <p>Solver agreement proves that two implementations encode the same ideal DC equations. It does not prove that the equations match the physical device or biological system.</p>
+              </div>
+            </article>
+
+            <article class="lesson-panel">
+              <h2>Jacobian: Sensitivity, Not a Training Label</h2>
+              <div class="result-figure-panel compact-figure">
+                <img src="assets/module4-jacobian-spectrum.png" alt="Singular value spectra from the 8x8 pairwise-current Jacobian analysis" />
+                <p>The Jacobian measures how each current changes after a small change in each cell resistance. Full rank indicates local recoverability; the condition number indicates how noise can amplify into reconstruction error.</p>
+              </div>
+            </article>
+
+            <article class="lesson-panel">
+              <h2>Forward-Model Consistency Check</h2>
+              <div class="result-figure-panel compact-figure">
+                <img src="assets/module4-forward-agreement.png" alt="Simon and MNA ideal DC forward solver agreement" />
+                <p>Across 50 held-out maps and 3,200 current values, relative MAE was 1.47e-15 and the tolerance check passed. This supports code consistency while preserving MNA as an independently written physics layer.</p>
+              </div>
+            </article>
+          </div>
+
+          <article class="lesson-panel publication-path">
+            <h2>Path Toward a Publishable Contribution</h2>
+            <div class="publication-steps">
+              <div><strong>1. Separate contributions</strong><span>Ablate topology, curriculum, uncertainty, and each physics loss.</span></div>
+              <div><strong>2. Demonstrate scaling</strong><span>Train across multiple n x n sizes using a terminal-component factor graph.</span></div>
+              <div><strong>3. Stress the model</strong><span>Add sensor noise, resistor tolerance, missing channels, and simulator mismatch.</span></div>
+              <div><strong>4. Calibrate reality</strong><span>Use a small measured dataset to estimate physical nuisance parameters and test transfer.</span></div>
+              <div><strong>5. Extend frequency</strong><span>When phase/frequency data arrive, activate complex impedance and R/L/C heads.</span></div>
+            </div>
+          </article>
         </div>
 
         <div class="lab-step" data-panel="resistance-reflect">
@@ -1331,7 +1410,7 @@
                   <p class="quiz-feedback" data-correct-feedback="Correct. This is why measurement design, model choice, and validation matter." data-incorrect-feedback="Limited measurements may not contain enough information to uniquely recover every internal value."></p>
                 </div>
                 <div class="quiz-card" data-question-type="choice" data-correct="gnn">
-                  <p class="quiz-question">4. Why might a graph neural network be useful later?</p>
+                  <p class="quiz-question">4. Why is a graph neural network useful in the current 8x8 models?</p>
                   <label><input type="radio" name="res-q4" value="gnn"> The resistor array has connected nodes and edges that match a graph structure.</label>
                   <label><input type="radio" name="res-q4" value="text"> The data are primarily paragraphs.</label>
                   <label><input type="radio" name="res-q4" value="ignore"> It ignores circuit topology completely.</label>
@@ -1400,8 +1479,8 @@
               <span class="reference-tag">Module 4 final mini-project</span>
               <h2>Design a More Reliable Inverse Sensor</h2>
               <p>
-                Students use current/resistance CSV files to reconstruct a hidden 3x3 resistance
-                map, then audit whether the inverse model is reliable enough to support a real
+                Students use current/resistance CSV files to reconstruct a hidden 8x8 resistance
+                map, compare data-only and physics-informed routes, then audit whether the inverse model is reliable enough to support a real
                 sensing experiment.
               </p>
               <div class="project-grid">
@@ -1411,7 +1490,7 @@
                 </div>
                 <div>
                   <strong>Level 2 - Compare formulations</strong>
-                  <p>Compare raw-resistance, log-resistance, conductance-based, and physics-informed versions. Explain why current relates more directly to conductance than resistance.</p>
+                  <p>Compare the data-only MLP, Hybrid GNN, and independent MNA-GNN. Separate architecture, data curriculum, and physics-loss effects.</p>
                 </div>
                 <div>
                   <strong>Level 3 - Diagnose failure</strong>
@@ -1419,11 +1498,11 @@
                 </div>
                 <div>
                   <strong>Level 4 - Design improvement</strong>
-                  <p>Propose one improvement such as an added measurement path, symmetry augmentation, forward-model consistency loss, noise testing, or a graph-based model.</p>
+                  <p>Propose one improvement such as Jacobian-guided measurement design, calibration parameters, noise testing, or cross-size message passing.</p>
                 </div>
                 <div>
                   <strong>Level 5 - Scale to n x n</strong>
-                  <p>Extend the task from 3x3 to 4x4, 5x5, or a student-chosen n x n array. Update the target size to n*n cells and test whether the same measurements still contain enough information.</p>
+                  <p>Extend the task from 8x8 to 12x12, 16x16, or variable n x n arrays. Test whether one shared graph model transfers across sizes.</p>
                 </div>
               </div>
               <div class="student-checklist">
@@ -1447,19 +1526,19 @@
                   <label>
                     Array size challenge
                     <select id="resistance-design-size">
-                      <option value="3x3 baseline">3x3 baseline</option>
-                      <option value="4x4 scaling challenge">4x4 scaling challenge</option>
-                      <option value="5x5 scaling challenge">5x5 scaling challenge</option>
+                      <option value="8x8 baseline">8x8 baseline</option>
+                      <option value="12x12 scaling challenge">12x12 scaling challenge</option>
+                      <option value="16x16 scaling challenge">16x16 scaling challenge</option>
                       <option value="student-selected n x n array">Student-selected n x n array</option>
                     </select>
                   </label>
                   <label>
                     Model formulation
                     <select id="resistance-design-formulation">
-                      <option value="physics-informed conductance regression">Physics-informed conductance regression</option>
-                      <option value="conductance-based MLP regression">Conductance-based MLP regression</option>
-                      <option value="raw resistance regression">Raw resistance regression</option>
-                      <option value="graph model over array nodes">Graph model over array nodes</option>
+                      <option value="Hybrid GNN with Simon consistency">Hybrid GNN with Simon consistency</option>
+                      <option value="data-only MLP regression">Data-only MLP regression</option>
+                      <option value="independent MNA-GNN">Independent MNA-GNN</option>
+                      <option value="variable-size terminal-component factor graph">Variable-size factor graph</option>
                     </select>
                   </label>
                   <label>
@@ -1475,7 +1554,7 @@
                   <label>
                     Improvement idea
                     <select id="resistance-design-improvement">
-                      <option value="adding a forward-model consistency loss">Add forward-model consistency loss</option>
+                      <option value="adding Jacobian-guided measurement paths">Add Jacobian-guided measurements</option>
                       <option value="adding row, column, and diagonal measurement paths">Add more measurement paths</option>
                       <option value="augmenting the training set with rotated and mirrored maps">Add symmetry augmentation</option>
                       <option value="training with simulated measurement noise">Add noise robustness training</option>
@@ -1530,7 +1609,7 @@
                 <tr><td>1</td><td>Conditional GAN</td><td>WFM image-to-image prediction</td></tr>
                 <tr><td>2</td><td>1D signal classification</td><td>ECG arrhythmia beat classification</td></tr>
                 <tr><td>3</td><td>RNN/GRU sequence modeling</td><td>Fall/gait prediction and Holomotion case study</td></tr>
-                <tr><td>4</td><td>Inverse modeling / GNN extension</td><td>Resistive array local-map reconstruction</td></tr>
+                <tr><td>4</td><td>Inverse modeling / physics-informed GNN</td><td>8x8 resistive-array reconstruction and identifiability</td></tr>
               </tbody>
             </table>
           </article>
@@ -1697,7 +1776,15 @@
               </a>
               <a class="code-link-card repo-link" href="#" data-repo-path="module4_resistive_array">
                 <strong>Module 4 Sensors</strong>
-                <span>Resistive array inverse-modeling prototype</span>
+                <span>8x8 inverse models, MNA physics, and Jacobian analysis</span>
+              </a>
+              <a class="code-link-card repo-link" href="#" data-repo-path="module4_resistive_array/HYBRID_GNN_REPRODUCTION.md">
+                <strong>Hybrid GNN Reproduction</strong>
+                <span>Training, testing, outputs, and interpretation notes</span>
+              </a>
+              <a class="code-link-card repo-link" href="#" data-repo-path="module4_resistive_array/dynamic_impedance/README.md">
+                <strong>MNA-GNN Architecture</strong>
+                <span>Independent physics layer and frequency-ready design</span>
               </a>
               <a class="code-link-card repo-link" href="#" data-repo-path="backend_server.py">
                 <strong>Local Backend</strong>
@@ -1710,6 +1797,6 @@
     </main>
 
     <script src="deploy-config.js?v=20260708"></script>
-    <script src="app.js?v=20260704m5"></script>
+    <script src="app.js?v=20260726m4"></script>
   </body>
 </html>
