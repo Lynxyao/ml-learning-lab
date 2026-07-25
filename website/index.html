@@ -1149,7 +1149,7 @@
             <h1 id="resistance-title">Can ML reconstruct a local resistance map from limited electrical measurements?</h1>
             <p>
               Students explore an 8x8 resistive sensor array and compare three inverse models:
-              a data-only MLP, a Hybrid GNN with Simon-model consistency, and an independently
+              a data-only MLP, a Hybrid GNN with reference-model consistency, and an independently
               formulated MNA-GNN. The goal is to reconstruct 64 hidden local resistance values
               from 64 measurable row-column current responses.
             </p>
@@ -1241,7 +1241,7 @@
               <h2>Choose a Trained Model</h2>
               <div class="option-list">
                 <label><input type="radio" name="resistance-model" value="mlp" /> Data-only MLP baseline</label>
-                <label><input type="radio" name="resistance-model" value="hybrid" checked /> Hybrid GNN + Simon consistency</label>
+                <label><input type="radio" name="resistance-model" value="hybrid" checked /> Hybrid GNN + reference-model consistency</label>
                 <label><input type="radio" name="resistance-model" value="mna" /> Dynamic GNN + independent MNA</label>
               </div>
             </article>
@@ -1309,7 +1309,7 @@
 
           <div class="evidence-strip">
             <div><span>MLP MAE</span><strong>3.37 ohm</strong><small>Data-only baseline</small></div>
-            <div><span>Hybrid MAE</span><strong>0.069 ohm</strong><small>Simon consistency</small></div>
+            <div><span>Hybrid MAE</span><strong>0.069 ohm</strong><small>Reference-model consistency</small></div>
             <div><span>MNA-GNN MAE</span><strong>0.116 ohm</strong><small>Independent physics</small></div>
             <div><span>Jacobian rank</span><strong>64 / 64</strong><small>Tested operating points</small></div>
           </div>
@@ -1323,12 +1323,12 @@
                 </thead>
                 <tbody>
                   <tr><td>MLP</td><td>Global current-to-map correlation</td><td>None during training</td><td>Missed rare high cells</td></tr>
-                  <tr><td>Hybrid GNN</td><td>Local correction to a V/I proxy</td><td>Simon/KCL forward consistency</td><td>Best present MAE</td></tr>
+                  <tr><td>Hybrid GNN</td><td>Local correction to a V/I proxy</td><td>Reference-model KCL consistency</td><td>Best present MAE</td></tr>
                   <tr><td>MNA-GNN</td><td>Topology-aware local impedance</td><td>Independent incidence-MNA loss</td><td>Nearly equal accuracy; AC-ready</td></tr>
                 </tbody>
               </table>
-              <div class="result-figure-panel compact-figure">
-                <img src="assets/module4-model-comparison.png" alt="Comparison of Hybrid GNN and MNA-GNN reconstruction metrics" />
+              <div class="boundary-note">
+                <strong>How to read the improvement</strong>
                 <p>Both GNN routes localize the held-out high-resistance cells. The reported gain is not from physics loss alone: topology, curriculum sampling, class weighting, and the classification head also contribute.</p>
               </div>
             </article>
@@ -1336,7 +1336,7 @@
             <article class="lesson-panel">
               <h2>Validation Ladder</h2>
               <ol class="validation-ladder">
-                <li><strong>Implementation agreement</strong><span>Simon and MNA solvers agree on 3,200 ideal-DC currents to numerical precision.</span></li>
+                <li><strong>Implementation agreement</strong><span>The reference DC solver and independent MNA solver agree on 3,200 ideal-DC currents to numerical precision.</span></li>
                 <li><strong>Local identifiability</strong><span>The 8x8 Jacobian is full rank at tested points, but conditioning worsens for sparse patterns.</span></li>
                 <li><strong>Held-out reconstruction</strong><span>Both GNN models recover sparse high-state locations in the current simulated test set.</span></li>
                 <li><strong>Still required</strong><span>Noise, component tolerance, model mismatch, cross-size tests, and measured hardware ground truth.</span></li>
@@ -1357,10 +1357,15 @@
 
             <article class="lesson-panel">
               <h2>Forward-Model Consistency Check</h2>
-              <div class="result-figure-panel compact-figure">
-                <img src="assets/module4-forward-agreement.png" alt="Simon and MNA ideal DC forward solver agreement" />
-                <p>Across 50 held-out maps and 3,200 current values, relative MAE was 1.47e-15 and the tolerance check passed. This supports code consistency while preserving MNA as an independently written physics layer.</p>
-              </div>
+              <table class="reference-table">
+                <tbody>
+                  <tr><th>Held-out maps</th><td>50</td></tr>
+                  <tr><th>Currents compared</th><td>3,200</td></tr>
+                  <tr><th>Relative MAE</th><td>1.47e-15</td></tr>
+                  <tr><th>Tolerance check</th><td>Passed</td></tr>
+                </tbody>
+              </table>
+              <p class="figure-caption">The reference DC solver and independently written MNA layer agree under matched ideal assumptions. This supports implementation consistency, not physical-device validation.</p>
             </article>
           </div>
 
@@ -1535,7 +1540,7 @@
                   <label>
                     Model formulation
                     <select id="resistance-design-formulation">
-                      <option value="Hybrid GNN with Simon consistency">Hybrid GNN with Simon consistency</option>
+                      <option value="Hybrid GNN with reference-model consistency">Hybrid GNN with reference-model consistency</option>
                       <option value="data-only MLP regression">Data-only MLP regression</option>
                       <option value="independent MNA-GNN">Independent MNA-GNN</option>
                       <option value="variable-size terminal-component factor graph">Variable-size factor graph</option>
@@ -1797,6 +1802,6 @@
     </main>
 
     <script src="deploy-config.js?v=20260708"></script>
-    <script src="app.js?v=20260726m4"></script>
+    <script src="app.js?v=20260726m5"></script>
   </body>
 </html>

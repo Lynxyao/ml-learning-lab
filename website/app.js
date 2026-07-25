@@ -865,7 +865,7 @@ if (resistanceProjectPlanButton) {
     const arraySize =
       document.querySelector("#resistance-design-size")?.value || "8x8 baseline";
     const formulation =
-      document.querySelector("#resistance-design-formulation")?.value || "Hybrid GNN with Simon consistency";
+      document.querySelector("#resistance-design-formulation")?.value || "Hybrid GNN with reference-model consistency";
     const failure =
       document.querySelector("#resistance-design-failure")?.value || "underestimated high-resistance cell";
     const improvement =
@@ -1016,14 +1016,14 @@ const resistanceModels = {
     predictedHigh: 22,
   },
   hybrid: {
-    label: "Hybrid GNN + Simon consistency",
+    label: "Hybrid GNN + reference-model consistency",
     mae: 0.069,
     rmse: 0.383,
     highRecall: 1.0,
     cellAccuracy: 1.0,
     image: "assets/module4-hybrid-gnn-examples.png",
     logic:
-      "A V/I-derived physics proxy provides a rough map. A grid GNN exchanges information between neighboring cells and predicts local log-resistance corrections. Simon/KCL forward consistency is an additional training loss.",
+      "A V/I-derived physics proxy provides a rough map. A grid GNN exchanges information between neighboring cells and predicts local log-resistance corrections. Reference-model KCL consistency is an additional training loss.",
     training:
       "The Hybrid GNN combines topology, sparse-high curriculum data, classification supervision, uncertainty learning, and forward consistency.",
     caption:
