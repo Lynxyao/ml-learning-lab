@@ -1444,6 +1444,23 @@ input[type="range"] {
   line-height: 1.2;
 }
 
+.reference-module-heading {
+  margin: 44px 0 18px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+}
+
+.reference-module-heading h2 {
+  max-width: 880px;
+  margin: 0;
+  font-size: 30px;
+}
+
+.reference-module-heading p {
+  max-width: 900px;
+  margin: 10px 0 0;
+}
+
 .reference-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1518,6 +1535,42 @@ input[type="range"] {
 
 .mapping-list p {
   margin: 8px 0 0;
+}
+
+.participation-flow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 1px solid var(--line);
+}
+
+.participation-flow div {
+  min-width: 0;
+  padding: 16px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.participation-flow div:nth-child(2n) {
+  border-right: 0;
+}
+
+.participation-flow div:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+
+.participation-flow strong,
+.participation-flow span {
+  display: block;
+}
+
+.participation-flow strong {
+  margin-bottom: 6px;
+  color: var(--ink);
+}
+
+.participation-flow span {
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 .reference-table {
@@ -1825,6 +1878,28 @@ select {
 
   .evidence-strip {
     grid-template-columns: 1fr;
+  }
+
+  .participation-flow {
+    grid-template-columns: 1fr;
+  }
+
+  .participation-flow div,
+  .participation-flow div:nth-child(2n),
+  .participation-flow div:nth-last-child(-n + 2) {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .participation-flow div:last-child {
+    border-bottom: 0;
+  }
+
+  .reference-table {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
   }
 
   .evidence-strip > div {

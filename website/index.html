@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Interactive ML Learning Lab</title>
-    <link rel="stylesheet" href="styles.css?v=20260704m5" />
+    <link rel="stylesheet" href="styles.css?v=20260727m1" />
   </head>
   <body>
     <aside class="sidebar" aria-label="Learning lab navigation">
@@ -1645,6 +1645,30 @@
               <li>Next step: one experiment that would improve trust in the result.</li>
             </ul>
           </article>
+          <article class="lesson-panel">
+            <h2>How Students Participate</h2>
+            <div class="participation-flow">
+              <div><strong>1. Access</strong><span>Open the public website without installing Python or creating an account.</span></div>
+              <div><strong>2. Predict</strong><span>Answer a prompt before revealing the saved model result.</span></div>
+              <div><strong>3. Investigate</strong><span>Change guided settings, compare cases, and inspect metrics or error maps.</span></div>
+              <div><strong>4. Assess</strong><span>Complete the quiz, reflection, and mini-project report for the selected module.</span></div>
+            </div>
+          </article>
+          <article class="lesson-panel">
+            <h2>Learning Evidence and Platform Boundary</h2>
+            <table class="reference-table">
+              <tbody>
+                <tr><th>Available now</th><td>Guided activities, quizzes, reflection prompts, saved experiments, code links, and mini-project templates.</td></tr>
+                <tr><th>Student evidence</th><td>Pre/post self-assessment, quiz responses, reflection, and the mini-project report can be collected by an instructor-defined submission method.</td></tr>
+                <tr><th>Not yet recorded</th><td>The public static site does not currently store student identity, attendance, scores, or uploaded files.</td></tr>
+                <tr><th>Future extension</th><td>A consent-aware backend could add anonymous IDs, completion records, instructor export, and approved data-upload workflows.</td></tr>
+              </tbody>
+            </table>
+            <div class="boundary-note">
+              <strong>Privacy and accessibility</strong>
+              <p>Any formal student-data collection should be reviewed for accessibility, privacy, consent, and applicable research or course requirements before deployment.</p>
+            </div>
+          </article>
         </div>
       </section>
 
@@ -1747,6 +1771,141 @@
               <li>Which part of the original workflow is simplified in this teaching website?</li>
               <li>What extra validation would be needed before using predictions as scientific force measurements?</li>
             </ul>
+          </article>
+        </div>
+
+        <div class="reference-module-heading">
+          <span class="reference-tag">Module 2 references</span>
+          <h2>ECG signals, annotations, and evaluation</h2>
+          <p>Module 2 uses a public clinical-signal benchmark and teaches students to distinguish overall accuracy from performance on less common beat classes.</p>
+        </div>
+
+        <div class="content-grid two-col">
+          <article class="lesson-panel reference-card">
+            <span class="reference-tag">Dataset and original publication</span>
+            <h2>MIT-BIH Arrhythmia Database</h2>
+            <p>
+              Moody, G. B., and Mark, R. G. PhysioNet version 1.0.0. The database
+              contains 48 half-hour, two-channel ambulatory ECG recordings from 47
+              subjects, sampled at 360 Hz with expert beat annotations.
+            </p>
+            <div class="reference-actions">
+              <a class="primary-link" href="https://physionet.org/content/mitdb/1.0.0/" target="_blank" rel="noreferrer">Open dataset</a>
+              <a class="secondary-link" href="https://doi.org/10.13026/C2F305" target="_blank" rel="noreferrer">Open DOI</a>
+            </div>
+          </article>
+          <article class="lesson-panel">
+            <h2>How Module 2 Uses This Source</h2>
+            <div class="mapping-list">
+              <div><strong>Student input</strong><p>Fixed-length ECG beat segments derived from annotated recordings.</p></div>
+              <div><strong>Learning task</strong><p>Train or inspect a 1D signal classifier and compare accuracy, macro-F1, recall, and confusion patterns.</p></div>
+              <div><strong>Important boundary</strong><p>The activity demonstrates classification methodology; it is not a diagnostic device or a substitute for clinical interpretation.</p></div>
+            </div>
+          </article>
+        </div>
+
+        <div class="reference-module-heading">
+          <span class="reference-tag">Module 3 references</span>
+          <h2>Fall detection, gait signals, and motion-analysis validation</h2>
+          <p>Module 3 connects public wearable-sensor data with the measurement and validation questions that arise in a real motion-analysis workflow.</p>
+        </div>
+
+        <div class="content-grid two-col">
+          <article class="lesson-panel reference-card">
+            <span class="reference-tag">Public activity dataset</span>
+            <h2>UniMiB SHAR: human activity and fall detection</h2>
+            <p>
+              Micucci, D., Mobilio, M., and Napoletano, P. Applied Sciences, 2017.
+              The dataset contains 11,771 smartphone-acceleration samples from 30
+              subjects across activities of daily living and simulated falls.
+            </p>
+            <div class="reference-actions">
+              <a class="primary-link" href="https://www.boa.unimib.it/handle/10281/182484" target="_blank" rel="noreferrer">Open source</a>
+              <a class="secondary-link" href="https://doi.org/10.3390/app7101101" target="_blank" rel="noreferrer">Open DOI</a>
+            </div>
+          </article>
+          <article class="lesson-panel reference-card">
+            <span class="reference-tag">Device-context reference</span>
+            <h2>HoloMotion technical validation</h2>
+            <p>
+              This technical resource describes markerless motion-analysis
+              benchmarking, optical-reference comparison, capture constraints,
+              and limitations relevant to gait and range-of-motion workflows.
+            </p>
+            <div class="reference-actions">
+              <a class="primary-link" href="https://holomotion.tech/en/science" target="_blank" rel="noreferrer">Open validation page</a>
+              <a class="secondary-link" href="https://holomotion.tech/en/technology" target="_blank" rel="noreferrer">Open technology page</a>
+            </div>
+          </article>
+          <article class="lesson-panel">
+            <h2>How Module 3 Uses These Sources</h2>
+            <div class="mapping-list">
+              <div><strong>Public-data activity</strong><p>Students compare fall and non-fall sequences while checking subject separation and class imbalance.</p></div>
+              <div><strong>Device connection</strong><p>Students translate model inputs into movement features such as gait timing, joint range of motion, asymmetry, and stability.</p></div>
+              <div><strong>Planned extension</strong><p>A standardized CSV/JSON upload workflow could support approved student-collected motion data and saved-model inference without uploading files to the static website.</p></div>
+            </div>
+          </article>
+          <article class="lesson-panel">
+            <h2>Data-Use Boundary</h2>
+            <ul class="study-list">
+              <li>The current public site does not upload, retain, or train on personal motion data.</li>
+              <li>Future browser-side import should validate file format and process data locally by default.</li>
+              <li>Human-subject data collection requires an approved protocol, consent process, and secure storage plan.</li>
+              <li>Performance on a public dataset does not establish validity for a different device, population, or capture environment.</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="reference-module-heading">
+          <span class="reference-tag">Module 4 references</span>
+          <h2>Circuit equations, graph structure, and physics-informed learning</h2>
+          <p>Module 4 chooses its model from the structure of the sensing problem: local components form a circuit graph, while KCL and MNA provide testable electrical constraints.</p>
+        </div>
+
+        <div class="content-grid two-col">
+          <article class="lesson-panel reference-card">
+            <span class="reference-tag">Circuit-analysis foundation</span>
+            <h2>The Modified Nodal Approach to Network Analysis</h2>
+            <p>
+              Ho, C.-W., Ruehli, A. E., and Brennan, P. A. IEEE Transactions on
+              Circuits and Systems, 1975. This work introduced the MNA formulation
+              used to assemble and solve circuit equations.
+            </p>
+            <div class="reference-actions">
+              <a class="primary-link" href="https://research.ibm.com/publications/the-modified-nodal-approach-to-network-analysis" target="_blank" rel="noreferrer">Open publication</a>
+            </div>
+          </article>
+          <article class="lesson-panel reference-card">
+            <span class="reference-tag">Graph-learning foundation</span>
+            <h2>Relational inductive biases, deep learning, and graph networks</h2>
+            <p>
+              Battaglia, P. W., Hamrick, J. B., Bapst, V., et al., 2018. The graph
+              network framework explains how entities, relations, and message passing
+              can encode structured physical systems.
+            </p>
+            <div class="reference-actions">
+              <a class="primary-link" href="https://arxiv.org/abs/1806.01261" target="_blank" rel="noreferrer">Open paper</a>
+            </div>
+          </article>
+          <article class="lesson-panel reference-card">
+            <span class="reference-tag">Physics-informed learning</span>
+            <h2>Physics-informed machine learning</h2>
+            <p>
+              Karniadakis, G. E., Kevrekidis, I. G., Lu, L., et al. Nature Reviews
+              Physics, 2021. The review describes ways to combine data with physical
+              models, including inverse problems and partially known systems.
+            </p>
+            <div class="reference-actions">
+              <a class="primary-link" href="https://doi.org/10.1038/s42254-021-00314-5" target="_blank" rel="noreferrer">Open DOI</a>
+            </div>
+          </article>
+          <article class="lesson-panel">
+            <h2>How Module 4 Uses These Sources</h2>
+            <div class="mapping-list">
+              <div><strong>Why a GNN</strong><p>The array contains connected components and terminals, so neighborhood message passing matches the physical topology better than a flat input alone.</p></div>
+              <div><strong>How physics enters</strong><p>Predicted component values are checked by recomputing terminal currents through KCL/MNA-based equations during training.</p></div>
+              <div><strong>Important boundary</strong><p>Physics consistency improves agreement with the assumed circuit model; hardware calibration is still required before claiming real-device accuracy.</p></div>
+            </div>
           </article>
         </div>
 
