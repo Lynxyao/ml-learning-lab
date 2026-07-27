@@ -1,0 +1,7 @@
+sample_id,frame,label,subject_id,left_knee_angle,right_knee_angle,trunk_sway
+walk_001,0,ADL,P01,18.2,18.8,1.4
+walk_001,1,ADL,P01,24.1,24.5,1.6
+walk_001,2,ADL,P01,31.4,31.1,1.5
+fall_001,0,fall,P02,17.9,19.0,2.2
+fall_001,1,fall,P02,42.8,28.4,8.7
+fall_001,2,fall,P02,61.5,33.2,14.1

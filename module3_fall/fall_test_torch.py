@@ -37,7 +37,11 @@ def main() -> None:
     data = split_and_scale(x, y, groups=groups)
     _, _, test_idx = split_indices(x, y, groups)
 
-    model = FallRNN(model=checkpoint["model_type"], hidden_size=int(checkpoint["hidden_size"])).to(device)
+    model = FallRNN(
+        input_size=int(checkpoint.get("input_size", x.shape[-1])),
+        model=checkpoint["model_type"],
+        hidden_size=int(checkpoint["hidden_size"]),
+    ).to(device)
     model.load_state_dict(checkpoint["model_state"])
 
     probs, pred = predict(model, data.x_test, args.batch_size, device)

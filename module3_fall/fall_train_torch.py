@@ -53,6 +53,7 @@ def checkpoint_payload(
         "model_state": model.state_dict(),
         "model_type": args.model,
         "hidden_size": args.hidden_size,
+        "input_size": int(data.x_train.shape[-1]),
         "mean": data.mean,
         "std": data.std,
         "data_npz": str(args.data_npz),
@@ -86,7 +87,11 @@ def main() -> None:
     data = split_and_scale(x, y, groups=groups, seed=args.seed)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = FallRNN(hidden_size=args.hidden_size, model=args.model).to(device)
+    model = FallRNN(
+        input_size=int(data.x_train.shape[-1]),
+        hidden_size=args.hidden_size,
+        model=args.model,
+    ).to(device)
 
     pos = max(float((data.y_train == 1).sum()), 1.0)
     neg = max(float((data.y_train == 0).sum()), 1.0)

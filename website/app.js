@@ -26,6 +26,9 @@ function showView(targetId) {
     button.classList.toggle("active", button.dataset.target === targetId);
   });
 
+  if (["wfm", "ecg", "motion", "resistance"].includes(targetId)) {
+    recordModuleVisit(targetId);
+  }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -39,6 +42,313 @@ const labState = {
   motion: null,
   resistance: null,
 };
+
+const moduleAssessments = {
+  wfm: {
+    label: "Module 1 - Image-to-Image",
+    questions: [
+      {
+        prompt: "What does the generator learn?",
+        options: ["Map an input image to a target-like image", "Count image files", "Choose the train/test split"],
+        answer: 0,
+      },
+      {
+        prompt: "What is required before treating a generated map as scientific evidence?",
+        options: ["A visually pleasing output", "Held-out and domain-specific validation", "More interface animation"],
+        answer: 1,
+      },
+    ],
+  },
+  ecg: {
+    label: "Module 2 - ECG Classification",
+    questions: [
+      {
+        prompt: "Why can accuracy be misleading for imbalanced ECG classes?",
+        options: ["It can hide errors on rare classes", "It only works for images", "It always equals macro-F1"],
+        answer: 0,
+      },
+      {
+        prompt: "Which split better tests generalization to unseen records?",
+        options: ["Random beats from every record", "Record-wise held-out split", "No test split"],
+        answer: 1,
+      },
+    ],
+  },
+  motion: {
+    label: "Module 3 - Motion",
+    questions: [
+      {
+        prompt: "Why use a GRU for a motion window?",
+        options: ["It models ordered time steps", "It removes the need for labels", "It only reads one posture image"],
+        answer: 0,
+      },
+      {
+        prompt: "Can the current UniMiB checkpoint directly validate Holomotion gait data?",
+        options: ["Yes, the feature spaces are identical", "No, transfer needs aligned inputs, labels, and validation", "Yes, if the CSV has many columns"],
+        answer: 1,
+      },
+    ],
+  },
+  resistance: {
+    label: "Module 4 - Sensor Inversion",
+    questions: [
+      {
+        prompt: "What is the inverse task?",
+        options: ["Currents to hidden resistance map", "Resistance map to currents only", "Images to class labels"],
+        answer: 0,
+      },
+      {
+        prompt: "What does a physics-consistency loss provide?",
+        options: ["A constraint, not automatic hardware validation", "Proof that all simulators are correct", "A replacement for test data"],
+        answer: 0,
+      },
+    ],
+  },
+};
+
+const studyStorageKey = "ml-learning-lab-study-v1";
+const studyConfig = window.STUDY_CONFIG || { enabled: false };
+const sessionVisitedModules = new Set();
+let studyClient = null;
+
+function loadStudyState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(studyStorageKey) || "{}");
+    return {
+      participantId: saved.participantId || crypto.randomUUID(),
+      consent: Boolean(saved.consent),
+      visits: Array.isArray(saved.visits) ? saved.visits : [],
+      assessments: Array.isArray(saved.assessments) ? saved.assessments : [],
+    };
+  } catch {
+    return { participantId: crypto.randomUUID(), consent: false, visits: [], assessments: [] };
+  }
+}
+
+const studyState = loadStudyState();
+
+function saveStudyState() {
+  try {
+    localStorage.setItem(studyStorageKey, JSON.stringify(studyState));
+  } catch {
+    // The current page session still works when browser storage is unavailable.
+  }
+  updateStudyDashboard();
+}
+
+function assessmentRecord(moduleName, phase) {
+  return [...studyState.assessments]
+    .reverse()
+    .find((record) => record.module === moduleName && record.phase === phase);
+}
+
+function renderAssessments() {
+  Object.entries(moduleAssessments).forEach(([moduleName, assessment]) => {
+    const moduleSection = document.querySelector(`#${moduleName}`);
+    const moduleHeader = moduleSection?.querySelector(".module-header");
+    if (!moduleHeader) return;
+    const panel = document.createElement("section");
+    panel.className = "learning-assessment";
+    panel.dataset.assessmentModule = moduleName;
+    moduleHeader.insertAdjacentElement("afterend", panel);
+    renderAssessmentPhase(moduleName, "pre");
+  });
+}
+
+function renderAssessmentPhase(moduleName, phase) {
+  const assessment = moduleAssessments[moduleName];
+  const panel = document.querySelector(`[data-assessment-module="${moduleName}"]`);
+  if (!panel) return;
+  const previous = assessmentRecord(moduleName, phase);
+  const phaseLabel = phase === "pre" ? "Pre-assessment" : "Post-assessment";
+  panel.innerHTML = `
+    <div class="assessment-heading">
+      <div>
+        <span class="reference-tag">Learning check</span>
+        <h2>${assessment.label}: ${phaseLabel}</h2>
+      </div>
+      <div class="segment-row" role="group" aria-label="Assessment phase">
+        <button type="button" class="segment-button ${phase === "pre" ? "active" : ""}" data-assessment-phase="pre">Pre</button>
+        <button type="button" class="segment-button ${phase === "post" ? "active" : ""}" data-assessment-phase="post">Post</button>
+      </div>
+    </div>
+    <p>Complete the pre-check before the module and the same concepts again afterward. Responses are stored in this browser unless approved study tracking is enabled and you consent.</p>
+    <div class="assessment-confidence">
+      <strong>How confident are you with this module topic?</strong>
+      <div class="confidence-scale">
+        ${[1, 2, 3, 4, 5]
+          .map(
+            (value) =>
+              `<label><input type="radio" name="${moduleName}-${phase}-confidence" value="${value}" />${value}</label>`
+          )
+          .join("")}
+      </div>
+    </div>
+    <div class="assessment-questions">
+      ${assessment.questions
+        .map(
+          (question, questionIndex) => `
+            <fieldset>
+              <legend>${questionIndex + 1}. ${question.prompt}</legend>
+              ${question.options
+                .map(
+                  (option, optionIndex) =>
+                    `<label><input type="radio" name="${moduleName}-${phase}-q${questionIndex}" value="${optionIndex}" />${option}</label>`
+                )
+                .join("")}
+            </fieldset>
+          `
+        )
+        .join("")}
+    </div>
+    <button type="button" class="primary-button" data-submit-assessment>Save ${phaseLabel}</button>
+    <p class="assessment-result" aria-live="polite">${
+      previous
+        ? `Saved earlier: ${previous.score}/${assessment.questions.length} concepts, confidence ${previous.confidence}/5.`
+        : ""
+    }</p>
+  `;
+
+  panel.querySelectorAll("[data-assessment-phase]").forEach((button) => {
+    button.addEventListener("click", () => renderAssessmentPhase(moduleName, button.dataset.assessmentPhase));
+  });
+  panel.querySelector("[data-submit-assessment]").addEventListener("click", () =>
+    submitAssessment(moduleName, phase)
+  );
+}
+
+function submitAssessment(moduleName, phase) {
+  const assessment = moduleAssessments[moduleName];
+  const panel = document.querySelector(`[data-assessment-module="${moduleName}"]`);
+  const confidence = panel.querySelector(`input[name="${moduleName}-${phase}-confidence"]:checked`);
+  const answers = assessment.questions.map((_, index) =>
+    panel.querySelector(`input[name="${moduleName}-${phase}-q${index}"]:checked`)
+  );
+  const result = panel.querySelector(".assessment-result");
+  if (!confidence || answers.some((answer) => !answer)) {
+    result.textContent = "Answer both concept questions and select a confidence rating.";
+    return;
+  }
+  const numericAnswers = answers.map((answer) => Number(answer.value));
+  const score = numericAnswers.reduce(
+    (total, answer, index) => total + Number(answer === assessment.questions[index].answer),
+    0
+  );
+  const record = {
+    module: moduleName,
+    phase,
+    score,
+    confidence: Number(confidence.value),
+    answers: numericAnswers,
+    createdAt: new Date().toISOString(),
+  };
+  studyState.assessments.push(record);
+  saveStudyState();
+  syncStudyRecord("assessment_responses", {
+    participant_id: studyState.participantId,
+    module: moduleName,
+    phase,
+    knowledge_score: score,
+    confidence: record.confidence,
+    answers: numericAnswers,
+  });
+
+  const pre = phase === "post" ? assessmentRecord(moduleName, "pre") : null;
+  result.textContent = pre
+    ? `Saved: ${score}/${assessment.questions.length}, confidence ${record.confidence}/5. Change from pre: ${score - pre.score >= 0 ? "+" : ""}${score - pre.score} concepts and ${record.confidence - pre.confidence >= 0 ? "+" : ""}${record.confidence - pre.confidence} confidence.`
+    : `Saved: ${score}/${assessment.questions.length} concepts, confidence ${record.confidence}/5. Complete the post-assessment after the module.`;
+}
+
+function recordModuleVisit(moduleName) {
+  studyState.visits.push({ module: moduleName, createdAt: new Date().toISOString() });
+  saveStudyState();
+  if (!sessionVisitedModules.has(moduleName)) {
+    sessionVisitedModules.add(moduleName);
+    syncStudyRecord("usage_events", {
+      participant_id: studyState.participantId,
+      event_name: "module_view",
+      module: moduleName,
+    });
+  }
+}
+
+function updateStudyDashboard() {
+  const participantCode = document.querySelector("#participant-code");
+  if (!participantCode) return;
+  participantCode.textContent = studyState.participantId.split("-")[0].toUpperCase();
+  document.querySelector("#study-consent").checked = studyState.consent;
+  document.querySelector("#study-visit-count").textContent = String(studyState.visits.length);
+  document.querySelector("#study-assessment-count").textContent = String(studyState.assessments.length);
+  const paired = Object.keys(moduleAssessments).filter(
+    (moduleName) => assessmentRecord(moduleName, "pre") && assessmentRecord(moduleName, "post")
+  ).length;
+  document.querySelector("#study-paired-count").textContent = String(paired);
+}
+
+async function initializeStudyBackend() {
+  const enabled = Boolean(studyConfig.enabled && studyConfig.supabaseUrl && studyConfig.supabaseAnonKey);
+  const signIn = document.querySelector("#study-sign-in");
+  const signOut = document.querySelector("#study-sign-out");
+  const email = document.querySelector("#study-email");
+  signIn.disabled = !enabled;
+  signOut.disabled = !enabled;
+  email.disabled = !enabled;
+  if (!enabled) {
+    updateStudyDashboard();
+    return;
+  }
+  try {
+    const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm");
+    studyClient = createClient(studyConfig.supabaseUrl, studyConfig.supabaseAnonKey);
+    document.querySelector("#study-mode-copy").textContent =
+      "Approved study tracking is available. Records are sent only after you check the consent box.";
+    document.querySelector("#study-auth-copy").textContent = "Use a passwordless email link to sign in.";
+    const { data } = await studyClient.rpc("public_participant_count");
+    if (Number.isFinite(Number(data))) {
+      document.querySelector("#study-global-count").textContent = String(data);
+    }
+  } catch (error) {
+    document.querySelector("#study-auth-copy").textContent = `Study backend unavailable: ${error.message}`;
+  }
+  updateStudyDashboard();
+}
+
+async function syncStudyRecord(table, payload) {
+  if (!studyClient || !studyState.consent) return;
+  const { data } = await studyClient.auth.getSession();
+  const userId = data.session?.user?.id || null;
+  await studyClient.from(table).insert({ ...payload, user_id: userId });
+}
+
+renderAssessments();
+updateStudyDashboard();
+initializeStudyBackend();
+
+document.querySelector("#study-consent").addEventListener("change", (event) => {
+  studyState.consent = event.target.checked;
+  saveStudyState();
+});
+
+document.querySelector("#study-sign-in").addEventListener("click", async () => {
+  if (!studyClient) return;
+  const email = document.querySelector("#study-email").value.trim();
+  const copy = document.querySelector("#study-auth-copy");
+  if (!email) {
+    copy.textContent = "Enter an email address first.";
+    return;
+  }
+  const { error } = await studyClient.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: `${location.origin}${location.pathname}` },
+  });
+  copy.textContent = error ? error.message : "Check your email for the passwordless sign-in link.";
+});
+
+document.querySelector("#study-sign-out").addEventListener("click", async () => {
+  if (!studyClient) return;
+  await studyClient.auth.signOut();
+  document.querySelector("#study-auth-copy").textContent = "Signed out.";
+});
 
 let backendAvailable = false;
 
@@ -806,6 +1116,104 @@ document.querySelectorAll("[data-feature-group]").forEach((button) => {
 });
 
 renderHolomotionFeatureGroup("timing");
+
+function parseCsvLine(line) {
+  const values = [];
+  let value = "";
+  let quoted = false;
+  for (let index = 0; index < line.length; index += 1) {
+    const character = line[index];
+    if (character === '"' && line[index + 1] === '"' && quoted) {
+      value += '"';
+      index += 1;
+    } else if (character === '"') {
+      quoted = !quoted;
+    } else if (character === "," && !quoted) {
+      values.push(value.trim());
+      value = "";
+    } else {
+      value += character;
+    }
+  }
+  values.push(value.trim());
+  return values;
+}
+
+function parseMotionImport(fileName, text) {
+  if (fileName.toLowerCase().endsWith(".json")) {
+    const payload = JSON.parse(text);
+    const rows = Array.isArray(payload) ? payload : payload.rows;
+    if (!Array.isArray(rows) || !rows.every((row) => row && typeof row === "object")) {
+      throw new Error("JSON must be an array of row objects or an object with a rows array.");
+    }
+    return rows;
+  }
+  const lines = text.split(/\r?\n/).filter((line) => line.trim());
+  if (lines.length < 2) throw new Error("CSV needs a header and at least one data row.");
+  const headers = parseCsvLine(lines[0]);
+  return lines.slice(1).map((line) => {
+    const values = parseCsvLine(line);
+    return Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""]));
+  });
+}
+
+function summarizeMotionImport(rows) {
+  const required = ["sample_id", "frame", "label"];
+  const columns = Object.keys(rows[0] || {});
+  const missing = required.filter((name) => !columns.includes(name));
+  if (missing.length) throw new Error(`Missing required fields: ${missing.join(", ")}.`);
+  const featureColumns = columns.filter(
+    (name) => !["sample_id", "frame", "label", "subject_id"].includes(name)
+  );
+  if (!featureColumns.length) throw new Error("No motion feature columns were found.");
+  const samples = new Map();
+  rows.forEach((row) => {
+    const sampleId = String(row.sample_id || "").trim();
+    if (!sampleId) throw new Error("Every row needs a sample_id.");
+    if (!Number.isFinite(Number(row.frame))) throw new Error("Every frame value must be numeric.");
+    featureColumns.forEach((name) => {
+      if (!Number.isFinite(Number(row[name]))) {
+        throw new Error(`Feature ${name} contains a missing or nonnumeric value.`);
+      }
+    });
+    samples.set(sampleId, (samples.get(sampleId) || 0) + 1);
+  });
+  const frameCounts = [...samples.values()];
+  return {
+    rows: rows.length,
+    samples: samples.size,
+    features: featureColumns,
+    minimumFrames: Math.min(...frameCounts),
+    maximumFrames: Math.max(...frameCounts),
+  };
+}
+
+document.querySelector("#motion-data-file")?.addEventListener("change", async (event) => {
+  const file = event.target.files?.[0];
+  const output = document.querySelector("#motion-import-output");
+  if (!file) return;
+  try {
+    const rows = parseMotionImport(file.name, await file.text());
+    const summary = summarizeMotionImport(rows);
+    output.classList.remove("warning");
+    output.replaceChildren();
+    const heading = document.createElement("strong");
+    heading.textContent = "Local format check passed";
+    const shape = document.createElement("p");
+    shape.textContent = `${summary.rows} rows, ${summary.samples} sequences, ${summary.minimumFrames}-${summary.maximumFrames} frames per sequence, and ${summary.features.length} numeric features.`;
+    const features = document.createElement("p");
+    features.textContent = `Features: ${summary.features.slice(0, 10).join(", ")}${
+      summary.features.length > 10 ? ", ..." : ""
+    }`;
+    const boundary = document.createElement("p");
+    boundary.textContent =
+      "This confirms format only. Labels, capture protocol, subject split, and external validation must still be reviewed before training.";
+    output.append(heading, shape, features, boundary);
+  } catch (error) {
+    output.classList.add("warning");
+    output.textContent = `Format check failed: ${error.message}`;
+  }
+});
 
 const motionCaseFeedback = {
   a: "Not the best choice. Case A has slow walking speed, but the other features are mostly stable. A single speed number is not enough to localize risk.",

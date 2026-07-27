@@ -26,6 +26,8 @@ This fits an RNN-style module because the model should learn temporal patterns s
 - `fall_train_torch.py`: trains a fall prediction RNN and saves milestone checkpoints.
 - `fall_test_torch.py`: evaluates a saved model checkpoint.
 - `render_checkpoint_gallery.py`: renders held-out checkpoint comparisons for the website.
+- `holomotion_sequence_adapter.py`: converts approved, labeled CSV/JSON motion sequences into the shared NPZ format.
+- `example_holomotion_sequence.csv`: minimal long-form example for testing the adapter.
 
 ## Quick Start
 
@@ -55,6 +57,42 @@ Students should compare:
 - Why recall/sensitivity matters when the positive class is a fall.
 - What a fall-like acceleration trace looks like compared with daily activity.
 - How training/test split choices affect real-world reliability.
+
+## Holomotion Data Boundary
+
+The current saved GRU was trained on UniMiB-SHAR smartphone accelerometer windows,
+not on Holomotion data. Holomotion exports may contain joint coordinates, joint
+angles, gait timing, or other biomechanical fields, so they are a different feature
+space and require a newly trained checkpoint.
+
+For a labeled time-series export, use long-form CSV or JSON rows with:
+
+```text
+sample_id, frame, label, subject_id, <numeric feature 1>, <numeric feature 2>, ...
+```
+
+Each `sample_id` must contain at least two frames and one consistent binary label.
+The adapter resamples each sequence to a fixed length while preserving every numeric
+feature column:
+
+```powershell
+.\.venv313\Scripts\python.exe module3_fall\holomotion_sequence_adapter.py `
+  --input approved_holomotion_sequences.csv `
+  --output data\fall\holomotion_labeled_windows.npz `
+  --sequence_length 151
+
+.\.venv313\Scripts\python.exe module3_fall\fall_train_torch.py `
+  --data_npz data\fall\holomotion_labeled_windows.npz `
+  --epochs 30 `
+  --checkpoint_epochs 5,10,15,20,25,30 `
+  --output_dir fall_results\holomotion_sequence_run
+```
+
+Supervised fall-risk training requires labels such as observed falls, a prespecified
+clinical outcome, or an approved reference annotation. An unlabeled device report
+can be inspected or clustered, but it cannot validate a supervised fall classifier.
+Human-subject motion data should remain local unless an approved consent, storage,
+and access-control plan permits upload.
 
 ## Public Dataset
 

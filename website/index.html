@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Interactive ML Learning Lab</title>
-    <link rel="stylesheet" href="styles.css?v=20260728m3" />
+    <link rel="stylesheet" href="styles.css?v=20260728m4" />
   </head>
   <body>
     <aside class="sidebar" aria-label="Learning lab navigation">
@@ -23,6 +23,7 @@
         <button class="nav-button" data-target="motion">Module 3 · Motion</button>
         <button class="nav-button" data-target="resistance">Module 4 - Sensors</button>
         <button class="nav-button" data-target="framework">Module Framework</button>
+        <button class="nav-button" data-target="study">Study Participation</button>
         <button class="nav-button" data-target="references">References</button>
         <button class="nav-button" data-target="notebook">My Notes</button>
       </nav>
@@ -837,6 +838,24 @@
                 <strong>Holomotion boundary</strong>
                 <p>Real Holomotion exports can support interpretation, but clinical claims need labels, repeated trials, and validation.</p>
               </div>
+            </article>
+            <article class="lesson-panel motion-import-panel">
+              <h2>Inspect Your Own Motion Export Locally</h2>
+              <p>
+                Select a CSV or JSON file to check its fields and sequence structure in this browser.
+                The file is not uploaded. Training requires repeated frames, numeric features, and an
+                approved label for each sample.
+              </p>
+              <label class="file-picker" for="motion-data-file">
+                <span>Select CSV or JSON</span>
+                <input id="motion-data-file" type="file" accept=".csv,.json,text/csv,application/json" />
+              </label>
+              <div class="generated-explanation" id="motion-import-output" aria-live="polite">
+                Expected long-form fields: sample_id, frame, label, optional subject_id, and numeric motion features.
+              </div>
+              <a class="secondary-link repo-link" href="#" data-repo-path="module3_fall/holomotion_sequence_adapter.py">
+                Open the local training adapter
+              </a>
             </article>
           </div>
         </div>
@@ -1664,7 +1683,7 @@
           <article class="lesson-panel">
             <h2>How Students Participate</h2>
             <div class="participation-flow">
-              <div><strong>1. Access</strong><span>Open the public website without installing Python or creating an account.</span></div>
+              <div><strong>1. Access</strong><span>Open the public website without installing Python. Approved studies may optionally enable passwordless sign-in.</span></div>
               <div><strong>2. Predict</strong><span>Answer a prompt before revealing the saved model result.</span></div>
               <div><strong>3. Investigate</strong><span>Change guided settings, compare cases, and inspect metrics or error maps.</span></div>
               <div><strong>4. Assess</strong><span>Complete the quiz, reflection, and mini-project report for the selected module.</span></div>
@@ -1675,15 +1694,55 @@
             <table class="reference-table">
               <tbody>
                 <tr><th>Available now</th><td>Guided activities, quizzes, reflection prompts, saved experiments, code links, and mini-project templates.</td></tr>
-                <tr><th>Student evidence</th><td>Pre/post self-assessment, quiz responses, reflection, and the mini-project report can be collected by an instructor-defined submission method.</td></tr>
-                <tr><th>Not yet recorded</th><td>The public static site does not currently store student identity, attendance, scores, or uploaded files.</td></tr>
-                <tr><th>Future extension</th><td>A consent-aware backend could add anonymous IDs, completion records, instructor export, and approved data-upload workflows.</td></tr>
+                <tr><th>Student evidence</th><td>Each module now includes matched pre/post concept and confidence checks. Results remain in the student's browser by default.</td></tr>
+                <tr><th>Local record</th><td>A random participation code, module visits, and assessment summaries are stored on the current device. Selected motion files are parsed locally and are not uploaded.</td></tr>
+                <tr><th>Approved extension</th><td>The included Supabase configuration can enable passwordless sign-in, de-identified usage counts, and assessment export after consent and institutional review.</td></tr>
               </tbody>
             </table>
             <div class="boundary-note">
               <strong>Privacy and accessibility</strong>
               <p>Any formal student-data collection should be reviewed for accessibility, privacy, consent, and applicable research or course requirements before deployment.</p>
             </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" id="study" aria-labelledby="study-title">
+        <div class="section-kicker">Consent-aware learning evidence</div>
+        <h1 id="study-title">Study Participation</h1>
+        <div class="content-grid two-col">
+          <article class="lesson-panel">
+            <h2>Your Participation Code</h2>
+            <div class="participant-code" id="participant-code">Creating local code...</div>
+            <p id="study-mode-copy">
+              Browser-only pilot mode is active. Your activity remains on this device and is not included in a global count.
+            </p>
+            <label class="toggle-line">
+              <input id="study-consent" type="checkbox" />
+              I consent to send de-identified usage and assessment records if approved study tracking is enabled.
+            </label>
+            <div class="auth-panel">
+              <label for="study-email">Email for passwordless sign-in</label>
+              <input id="study-email" type="email" autocomplete="email" placeholder="name@university.edu" />
+              <div class="button-row">
+                <button class="primary-button" id="study-sign-in" type="button">Send sign-in link</button>
+                <button class="secondary-button" id="study-sign-out" type="button">Sign out</button>
+              </div>
+              <p class="small-note" id="study-auth-copy">Sign-in becomes available after the approved study backend is configured.</p>
+            </div>
+          </article>
+          <article class="lesson-panel">
+            <h2>Learning Record</h2>
+            <div class="study-stats">
+              <div><span>Module visits</span><strong id="study-visit-count">0</strong></div>
+              <div><span>Assessments completed</span><strong id="study-assessment-count">0</strong></div>
+              <div><span>Modules with pre + post</span><strong id="study-paired-count">0</strong></div>
+              <div><span>Global participants</span><strong id="study-global-count">Not enabled</strong></div>
+            </div>
+            <p>
+              Pre/post results are intended to measure learning change, not assign a course grade.
+              Do not enter names, medical details, or identifiable motion data in assessment responses.
+            </p>
           </article>
         </div>
       </section>
@@ -1965,6 +2024,7 @@
     </main>
 
     <script src="deploy-config.js?v=20260708"></script>
-    <script src="app.js?v=20260728m3"></script>
+    <script src="study-config.js?v=20260728"></script>
+    <script src="app.js?v=20260728m4"></script>
   </body>
 </html>
