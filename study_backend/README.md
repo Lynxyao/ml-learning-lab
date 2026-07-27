@@ -27,9 +27,11 @@ version. Do not drop tables after real participant collection has begun.
 - one participant row after consent and `Begin Learning`
 - one module-view event per module per page session
 - submitted pre/post concept score, confidence, and selected answer indices
+- every submitted quiz attempt, including score and per-question answers
+- the latest explicitly saved reflection for each participant and module
 
-The website does not upload imported motion files, notes, names, email addresses,
-or OSU identifiers.
+The website does not upload imported motion files, unsaved draft reflections,
+names, email addresses, or OSU identifiers.
 
 ## Viewing Results
 
@@ -38,10 +40,15 @@ Use the Supabase table editor for detailed authorized review:
 - `participants`: de-identified participant count and consent version
 - `usage_events`: module visits
 - `assessment_responses`: pre/post learning records
+- `quiz_attempts`: every quiz score and per-question response
+- `reflections`: the latest saved reflection for each module
 
 The public website can call `public_participant_count()` but cannot select
 individual rows. Export or analyze individual records only from an authorized
 administrator account.
+
+Run `admin_queries.sql` in the Supabase SQL editor for ready-made aggregate
+queries and an authorized reflection review table.
 
 ## Study Boundary
 

@@ -735,6 +735,21 @@ input[type="range"] {
   font-weight: 700;
 }
 
+.reflection-save-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.reflection-save-status {
+  min-height: 22px;
+  margin: 0;
+  color: var(--accent-dark);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .motion-import-panel {
   grid-column: 1 / -1;
 }
@@ -2126,8 +2141,13 @@ select {
   .module-header,
   .panel-heading,
   .research-banner,
-  .assessment-heading {
+  .assessment-heading,
+  .reflection-save-row {
     display: block;
+  }
+
+  .reflection-save-status {
+    margin-top: 10px;
   }
 
   .assessment-heading .segment-row {

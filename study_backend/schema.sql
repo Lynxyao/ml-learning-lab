@@ -33,13 +33,42 @@ create table if not exists public.assessment_responses (
   constraint assessment_identity_matches check (participant_id = user_id)
 );
 
+create table if not exists public.quiz_attempts (
+  id bigint generated always as identity primary key,
+  participant_id uuid not null references public.participants(participant_id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  module text not null check (module in ('wfm', 'ecg', 'motion', 'resistance')),
+  score integer not null check (score >= 0),
+  total_questions integer not null check (total_questions > 0),
+  answers jsonb not null,
+  created_at timestamptz not null default now(),
+  constraint quiz_score_within_total check (score <= total_questions),
+  constraint quiz_identity_matches check (participant_id = user_id)
+);
+
+create table if not exists public.reflections (
+  participant_id uuid not null references public.participants(participant_id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  module text not null check (module in ('wfm', 'ecg', 'motion', 'resistance')),
+  response_text text not null check (char_length(response_text) between 20 and 5000),
+  word_count integer not null check (word_count > 0),
+  updated_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  primary key (participant_id, module),
+  constraint reflection_identity_matches check (participant_id = user_id)
+);
+
 alter table public.participants enable row level security;
 alter table public.usage_events enable row level security;
 alter table public.assessment_responses enable row level security;
+alter table public.quiz_attempts enable row level security;
+alter table public.reflections enable row level security;
 
 grant select, insert, update on public.participants to authenticated;
 grant insert on public.usage_events to authenticated;
 grant insert on public.assessment_responses to authenticated;
+grant insert on public.quiz_attempts to authenticated;
+grant select, insert, update on public.reflections to authenticated;
 grant usage, select on all sequences in schema public to authenticated;
 
 drop policy if exists "participant can create own record" on public.participants;
@@ -73,6 +102,31 @@ drop policy if exists "consented clients can insert assessment responses" on pub
 create policy "participant can insert own assessment"
 on public.assessment_responses for insert
 to authenticated
+with check (user_id = auth.uid() and participant_id = auth.uid());
+
+drop policy if exists "participant can insert own quiz attempt" on public.quiz_attempts;
+create policy "participant can insert own quiz attempt"
+on public.quiz_attempts for insert
+to authenticated
+with check (user_id = auth.uid() and participant_id = auth.uid());
+
+drop policy if exists "participant can create own reflection" on public.reflections;
+create policy "participant can create own reflection"
+on public.reflections for insert
+to authenticated
+with check (user_id = auth.uid() and participant_id = auth.uid());
+
+drop policy if exists "participant can read own reflection" on public.reflections;
+create policy "participant can read own reflection"
+on public.reflections for select
+to authenticated
+using (user_id = auth.uid());
+
+drop policy if exists "participant can update own reflection" on public.reflections;
+create policy "participant can update own reflection"
+on public.reflections for update
+to authenticated
+using (user_id = auth.uid())
 with check (user_id = auth.uid() and participant_id = auth.uid());
 
 create or replace function public.public_participant_count()

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Interactive ML Learning Lab</title>
-    <link rel="stylesheet" href="styles.css?v=20260728m5" />
+    <link rel="stylesheet" href="styles.css?v=20260728m6" />
   </head>
   <body>
     <aside class="sidebar" aria-label="Learning lab navigation">
@@ -43,12 +43,13 @@
             <span class="reference-tag">Required before entering a module</span>
             <h2 id="start-gate-title">Begin with a private participation record</h2>
             <p>
-              The pilot records module visits and matched pre/post learning checks under an
-              anonymous participant ID. It does not ask for your name, email, or OSU username.
+              The pilot records module visits, pre/post checks, quiz attempts, and reflections
+              that you explicitly save under an anonymous participant ID. It does not ask for
+              your name, email, or OSU username.
             </p>
             <label class="toggle-line start-consent-line">
               <input id="start-consent" type="checkbox" />
-              I understand the pilot record described above and consent to participate.
+              I understand what will be recorded and consent to participate.
             </label>
           </div>
           <div class="start-gate-action">
@@ -1752,12 +1753,15 @@
             <div class="study-stats">
               <div><span>Module visits</span><strong id="study-visit-count">0</strong></div>
               <div><span>Assessments completed</span><strong id="study-assessment-count">0</strong></div>
+              <div><span>Quiz attempts</span><strong id="study-quiz-count">0</strong></div>
+              <div><span>Reflections saved</span><strong id="study-reflection-count">0</strong></div>
               <div><span>Modules with pre + post</span><strong id="study-paired-count">0</strong></div>
               <div><span>Global participants</span><strong id="study-global-count">Not enabled</strong></div>
             </div>
             <p>
-              Pre/post results are intended to measure learning change, not assign a course grade.
-              Do not enter names, medical details, or identifiable motion data in assessment responses.
+              These records are intended to measure engagement and learning change, not assign a
+              course grade. Do not enter names, medical details, or identifiable motion data in
+              quiz or reflection responses.
             </p>
           </article>
         </div>
@@ -2040,7 +2044,7 @@
     </main>
 
     <script src="deploy-config.js?v=20260708"></script>
-    <script src="study-config.js?v=20260728m5"></script>
-    <script src="app.js?v=20260728m5"></script>
+    <script src="study-config.js?v=20260728m6"></script>
+    <script src="app.js?v=20260728m6"></script>
   </body>
 </html>

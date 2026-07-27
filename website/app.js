@@ -131,6 +131,8 @@ function loadStudyState() {
       started: Boolean(saved.started),
       visits: Array.isArray(saved.visits) ? saved.visits : [],
       assessments: Array.isArray(saved.assessments) ? saved.assessments : [],
+      quizAttempts: Array.isArray(saved.quizAttempts) ? saved.quizAttempts : [],
+      reflections: saved.reflections && typeof saved.reflections === "object" ? saved.reflections : {},
     };
   } catch {
     return {
@@ -139,6 +141,8 @@ function loadStudyState() {
       started: false,
       visits: [],
       assessments: [],
+      quizAttempts: [],
+      reflections: {},
     };
   }
 }
@@ -343,6 +347,9 @@ function updateStudyDashboard() {
   document.querySelector("#study-consent").checked = studyState.consent;
   document.querySelector("#study-visit-count").textContent = String(studyState.visits.length);
   document.querySelector("#study-assessment-count").textContent = String(studyState.assessments.length);
+  document.querySelector("#study-quiz-count").textContent = String(studyState.quizAttempts.length);
+  document.querySelector("#study-reflection-count").textContent =
+    String(Object.keys(studyState.reflections).length);
   const paired = Object.keys(moduleAssessments).filter(
     (moduleName) => assessmentRecord(moduleName, "pre") && assessmentRecord(moduleName, "post")
   ).length;
@@ -388,19 +395,25 @@ async function initializeStudyBackend() {
   updateAccessGate();
 }
 
-async function syncStudyRecord(table, payload) {
-  if (!studyClient || !studyState.consent || !studyState.started) return;
+async function syncStudyRecord(table, payload, options = {}) {
+  if (!studyClient || !studyState.consent || !studyState.started) return false;
   const { data } = await studyClient.auth.getSession();
   const userId = data.session?.user?.id || null;
-  if (!userId || userId !== studyState.participantId) return;
-  const { error } = await studyClient.from(table).insert({
+  if (!userId || userId !== studyState.participantId) return false;
+  const record = {
     ...payload,
     participant_id: userId,
     user_id: userId,
-  });
+  };
+  const query = options.upsert
+    ? studyClient.from(table).upsert(record, { onConflict: options.onConflict })
+    : studyClient.from(table).insert(record);
+  const { error } = await query;
   if (error) {
     console.warn(`Unable to sync ${table}:`, error.message);
+    return false;
   }
+  return true;
 }
 
 renderAssessments();
@@ -513,6 +526,7 @@ function evaluateChoiceQuestion(card) {
   const checked = card.querySelector('input[type="radio"]:checked');
   if (!checked) {
     return {
+      answer: null,
       correct: false,
       message: "Choose one answer first. Then compare your reasoning with the feedback.",
     };
@@ -523,13 +537,15 @@ function evaluateChoiceQuestion(card) {
     ? card.querySelector(".quiz-feedback").dataset.correctFeedback
     : card.querySelector(".quiz-feedback").dataset.incorrectFeedback;
 
-  return { correct, message: feedback };
+  return { answer: checked.value, correct, message: feedback };
 }
 
 function evaluateTextQuestion(card) {
-  const answer = normalizeQuizText(card.querySelector(".quiz-answer").value);
-  if (answer.length < 12) {
+  const rawAnswer = card.querySelector(".quiz-answer").value.trim().slice(0, 2000);
+  const normalizedAnswer = normalizeQuizText(rawAnswer);
+  if (normalizedAnswer.length < 12) {
     return {
+      answer: rawAnswer,
       correct: false,
       message: "Add a little more detail. A useful answer should name the evidence, metric, or validation issue.",
     };
@@ -540,24 +556,31 @@ function evaluateTextQuestion(card) {
     .map((keyword) => keyword.trim().toLowerCase())
     .filter(Boolean);
   const minMatches = Number(card.dataset.minMatches || 1);
-  const matches = keywords.filter((keyword) => answer.includes(keyword)).length;
+  const matches = keywords.filter((keyword) => normalizedAnswer.includes(keyword)).length;
   const correct = matches >= minMatches;
   const feedback = correct
     ? card.querySelector(".quiz-feedback").dataset.correctFeedback
     : card.querySelector(".quiz-feedback").dataset.incorrectFeedback;
 
-  return { correct, message: feedback };
+  return { answer: rawAnswer, correct, message: feedback };
 }
 
 function checkQuiz(quiz) {
   const cards = Array.from(quiz.querySelectorAll(".quiz-card"));
   let correctCount = 0;
+  const answers = [];
 
-  cards.forEach((card) => {
+  cards.forEach((card, index) => {
     const feedback = card.querySelector(".quiz-feedback");
     const result = card.dataset.questionType === "text"
       ? evaluateTextQuestion(card)
       : evaluateChoiceQuestion(card);
+    answers.push({
+      question: index + 1,
+      type: card.dataset.questionType,
+      answer: result.answer,
+      correct: result.correct,
+    });
 
     card.classList.toggle("correct", result.correct);
     card.classList.toggle("incorrect", !result.correct);
@@ -574,6 +597,23 @@ function checkQuiz(quiz) {
   } else {
     summary.textContent = `Score: ${correctCount}/${total}. Review the feedback above, revise your reasoning, and check again.`;
   }
+
+  const attempt = {
+    module: quiz.dataset.quiz,
+    score: correctCount,
+    total,
+    answers,
+    createdAt: new Date().toISOString(),
+  };
+  studyState.quizAttempts.push(attempt);
+  saveStudyState();
+  syncStudyRecord("quiz_attempts", {
+    module: attempt.module,
+    score: attempt.score,
+    total_questions: attempt.total,
+    answers: attempt.answers,
+  });
+  summary.textContent += " This attempt has been recorded.";
 }
 
 function resetQuiz(quiz) {
@@ -1823,7 +1863,63 @@ function syncNotes() {
     resistanceNote || "No note yet. Write one in Module 4 Reflect.";
 }
 
-document.querySelector("#wfm-reflection").addEventListener("input", syncNotes);
-document.querySelector("#ecg-reflection").addEventListener("input", syncNotes);
-document.querySelector("#motion-reflection")?.addEventListener("input", syncNotes);
-document.querySelector("#resistance-reflection")?.addEventListener("input", syncNotes);
+const reflectionFields = {
+  wfm: "#wfm-reflection",
+  ecg: "#ecg-reflection",
+  motion: "#motion-reflection",
+  resistance: "#resistance-reflection",
+};
+
+Object.entries(reflectionFields).forEach(([moduleName, selector]) => {
+  const textarea = document.querySelector(selector);
+  if (!textarea) return;
+  textarea.maxLength = 5000;
+  const saved = studyState.reflections[moduleName];
+  if (saved?.text) textarea.value = saved.text;
+  textarea.addEventListener("input", syncNotes);
+
+  const actions = document.createElement("div");
+  actions.className = "reflection-save-row";
+  actions.innerHTML = `
+    <button class="primary-button" type="button">Save Reflection</button>
+    <p class="reflection-save-status" aria-live="polite">${
+      saved ? `Saved earlier: ${saved.wordCount} words.` : "Not saved yet."
+    }</p>
+  `;
+  textarea.insertAdjacentElement("afterend", actions);
+  actions.querySelector("button").addEventListener("click", async () => {
+    const text = textarea.value.trim();
+    const status = actions.querySelector(".reflection-save-status");
+    if (text.length < 20) {
+      status.textContent = "Write at least 20 characters before saving.";
+      return;
+    }
+    const wordCount = text.split(/\s+/).filter(Boolean).length;
+    const reflection = {
+      module: moduleName,
+      text,
+      wordCount,
+      updatedAt: new Date().toISOString(),
+    };
+    studyState.reflections[moduleName] = reflection;
+    saveStudyState();
+    syncNotes();
+    const synced = await syncStudyRecord(
+      "reflections",
+      {
+        module: moduleName,
+        response_text: text,
+        word_count: wordCount,
+        updated_at: reflection.updatedAt,
+      },
+      { upsert: true, onConflict: "participant_id,module" }
+    );
+    status.textContent = studyBackendEnabled()
+      ? synced
+        ? `Saved to the pilot record: ${wordCount} words.`
+        : "Saved on this device; backend sync is currently unavailable."
+      : `Saved on this device: ${wordCount} words. Connect Supabase for central review.`;
+  });
+});
+
+syncNotes();
