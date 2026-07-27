@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Interactive ML Learning Lab</title>
-    <link rel="stylesheet" href="styles.css?v=20260727m1" />
+    <link rel="stylesheet" href="styles.css?v=20260727m2" />
   </head>
   <body>
     <aside class="sidebar" aria-label="Learning lab navigation">
@@ -794,10 +794,10 @@
               </div>
             </article>
             <article class="lesson-panel">
-              <h2>Where RNN and GNN Fit</h2>
+              <h2>Why a Sequence Model Fits</h2>
               <div class="mapping-list">
                 <div>
-                  <strong>RNN / LSTM</strong>
+                  <strong>Bidirectional GRU</strong>
                   <p>Reads movement over time: accelerometer windows, gait cycles, Timed Up and Go, or joint-angle curves.</p>
                 </div>
                 <div>
@@ -840,28 +840,28 @@
         <div class="lab-step" data-panel="motion-train">
           <div class="content-grid three-col">
             <article class="lesson-panel">
-              <h2>Choose Task</h2>
-              <div class="option-list">
-                <label><input type="radio" name="motion-task" value="posture" checked /> Static posture risk</label>
-                <label><input type="radio" name="motion-task" value="rom" /> Joint range of motion</label>
-                <label><input type="radio" name="motion-task" value="gait" /> Gait sequence pattern</label>
+              <h2>Fixed Learning Task</h2>
+              <p>Classify each 151-step, three-axis accelerometer window as an activity of daily living (ADL) or a simulated fall.</p>
+              <div class="data-cards">
+                <div><strong>Split</strong><p>Subject-held-out train, validation, and test sets.</p></div>
+                <div><strong>Checkpoint rule</strong><p>Every five epochs is saved from the same training run.</p></div>
               </div>
             </article>
             <article class="lesson-panel">
-              <h2>Choose Model</h2>
+              <h2>Choose a Real Checkpoint</h2>
               <div class="option-list">
-                <label><input type="radio" name="motion-model" value="rnn" checked /> RNN / LSTM</label>
-                <label><input type="radio" name="motion-model" value="graph" /> Skeleton graph model</label>
+                <label><input type="radio" name="motion-model" value="gru" checked /> Bidirectional GRU</label>
+                <label><input type="radio" name="motion-model" value="graph" disabled /> Skeleton graph model (future device data)</label>
               </div>
-              <label class="slider-label" for="motion-epochs">Epochs <strong id="motion-epoch-label">12</strong></label>
-              <input id="motion-epochs" type="range" min="4" max="30" value="12" step="2" />
-              <button class="secondary-action" id="run-motion-sim">Run prototype training</button>
+              <label class="slider-label" for="motion-epochs">Saved epoch <strong id="motion-epoch-label">5</strong></label>
+              <input id="motion-epochs" type="range" min="5" max="30" value="5" step="5" />
+              <button class="secondary-action" id="run-motion-sim">Load saved checkpoint</button>
             </article>
             <article class="lesson-panel training-output">
-              <h2>Training Observation</h2>
+              <h2>Checkpoint Observation</h2>
               <div class="training-meter"><span id="motion-meter"></span></div>
               <p id="motion-training-copy">
-                Run the prototype to see how a simulated model learns from structured motion features.
+                Select an epoch to load its real held-out predictions from the completed GRU training run.
               </p>
             </article>
           </div>
@@ -871,7 +871,7 @@
           <div class="content-grid two-col">
             <article class="lesson-panel">
               <div class="panel-heading">
-                <h2>Test Your Prototype Run</h2>
+                <h2>Test Your Saved Checkpoint</h2>
                 <span class="run-pill" id="motion-test-run-pill">No run yet</span>
               </div>
               <div class="run-summary" id="motion-run-summary">
@@ -881,18 +881,28 @@
               <div class="motion-metrics">
                 <div><span>Accuracy</span><strong id="motion-accuracy">--</strong></div>
                 <div><span>Risk recall</span><strong id="motion-recall">--</strong></div>
-                <div><span>Mean angle error</span><strong id="motion-error">--</strong></div>
+                <div><span>Fall F1</span><strong id="motion-f1">--</strong></div>
               </div>
             </article>
             <article class="lesson-panel">
-              <h2>Movement Curve</h2>
-              <div class="curve-stage">
-                <svg id="motion-curve" viewBox="0 0 420 220" role="img" aria-labelledby="motion-curve-title">
-                  <title id="motion-curve-title">Simulated joint angle over time</title>
-                </svg>
+              <h2>Checkpoint Result</h2>
+              <div class="checkpoint-figure">
+                <a
+                  id="motion-checkpoint-link"
+                  href="assets/module3/checkpoint-epoch-05.png"
+                  target="_blank"
+                  rel="noreferrer"
+                  title="Open the full-size checkpoint figure"
+                >
+                  <img
+                    id="motion-checkpoint-figure"
+                    src="assets/module3/checkpoint-epoch-05.png"
+                    alt="Epoch 5 GRU held-out confusion matrix, probability distribution, and metrics"
+                  />
+                </a>
               </div>
               <p id="motion-curve-copy">
-                The curve will show a simulated joint angle sequence after training.
+                Load a checkpoint to compare its confusion matrix, fall-probability distribution, and held-out metrics.
               </p>
             </article>
           </div>
@@ -1876,18 +1886,6 @@
             </div>
           </article>
           <article class="lesson-panel reference-card">
-            <span class="reference-tag">Graph-learning foundation</span>
-            <h2>Relational inductive biases, deep learning, and graph networks</h2>
-            <p>
-              Battaglia, P. W., Hamrick, J. B., Bapst, V., et al., 2018. The graph
-              network framework explains how entities, relations, and message passing
-              can encode structured physical systems.
-            </p>
-            <div class="reference-actions">
-              <a class="primary-link" href="https://arxiv.org/abs/1806.01261" target="_blank" rel="noreferrer">Open paper</a>
-            </div>
-          </article>
-          <article class="lesson-panel reference-card">
             <span class="reference-tag">Physics-informed learning</span>
             <h2>Physics-informed machine learning</h2>
             <p>
@@ -1961,6 +1959,6 @@
     </main>
 
     <script src="deploy-config.js?v=20260708"></script>
-    <script src="app.js?v=20260726m5"></script>
+    <script src="app.js?v=20260727m2"></script>
   </body>
 </html>

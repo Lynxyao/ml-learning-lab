@@ -1,6 +1,24 @@
 # Module 4: Resistive Array Inverse Sensing
 
-This module prototypes Simon's resistive-array idea as an inverse sensing problem.
+This module treats resistive-array reconstruction as an inverse sensing problem.
+
+## Current Public Snapshot
+
+Updated 2026-07-27. The GitHub version now includes:
+
+- the data-only 8x8 MLP baseline;
+- the Hybrid GNN with a current-derived proxy, local correction, and uncertainty;
+- the independent DC/AC modified nodal analysis backend;
+- Jacobian sensitivity and identifiability diagnostics;
+- frequency-ready resistance, inductance, and capacitance prediction heads; and
+- unit tests for Ohm's law, series/parallel circuits, DC/AC MNA, Jacobians, model
+  output masks, and differentiable physics loss.
+
+Run the eight circuit/model tests from this module directory:
+
+```powershell
+.\.venv313\Scripts\python.exe -m unittest discover -s dynamic_impedance\tests -v
+```
 
 ## Core Problem
 
@@ -25,7 +43,7 @@ The current code uses a teaching simulator:
 5. Optionally add a simulator-informed consistency loss so predicted maps reproduce the measured signals under an unvalidated ideal circuit model.
 6. Use Jacobian sensitivity analysis to check whether the measurement design can distinguish local cells before scaling to higher-order arrays.
 
-Simon or Esther's real data can replace the synthetic generator later.
+Approved experimental measurements can replace the synthetic generator later.
 
 ## Files
 
@@ -40,7 +58,7 @@ Simon or Esther's real data can replace the synthetic generator later.
 - `physics_torch.py`: differentiable forward model used for physics-informed training.
 - `analyze_forward_jacobian.py`: reports measurement sensitivity and local identifiability diagnostics.
 - `circuit_physics.py`: ideal KCL/Laplacian solver for row-column terminal-pair measurements.
-- `analyze_pairwise_jacobian.py`: computes the full n^2 by n^2 Jacobian and singular-value diagnostics for Simon-style measurements.
+- `analyze_pairwise_jacobian.py`: computes the full n^2 by n^2 Jacobian and singular-value diagnostics for pairwise terminal-current measurements.
 - `hybrid_physics_gnn.py`: physics-proxy correction GNN with row/column circuit message passing, uncertainty, and calibration parameters.
 - `train_hybrid_physics_gnn.py`: trains the hybrid model with optional sparse-state simulator curriculum.
 - `test_hybrid_physics_gnn.py`: evaluates resistance, high-state, current-consistency, and uncertainty metrics.
@@ -115,7 +133,7 @@ frequency and phase data become available. See
 - `resistance_results/pairwise_jacobian_8x8/forward_model_data_agreement.json`
 
 The data-agreement check only verifies that the Python circuit solver reproduces
-Simon's generated CSV currents. It is not experimental validation of the circuit
+the reference-model-generated CSV currents. It is not experimental validation of the circuit
 topology, floating-terminal assumptions, contact resistance, or parasitic effects.
 
 ## Research Extension
@@ -124,6 +142,6 @@ The next research step is not simply to improve model accuracy. The important qu
 
 - Which measurement design is sufficient to recover local biological patterns?
 - How much reconstruction quality is lost when the number of measured paths is reduced?
-- Can a model trained on simulated circuit data transfer to Esther's experimental data?
+- Can a model trained on simulated circuit data transfer to experimental data?
 - Which local regions are most uncertain, and should those regions trigger additional measurements?
 - Can reconstruction error identify abnormal cell growth or sensor failure?

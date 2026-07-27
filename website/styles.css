@@ -1718,6 +1718,22 @@ select {
   background: #f9faf8;
 }
 
+.checkpoint-figure {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.checkpoint-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 13.5 / 4.2;
+  object-fit: contain;
+}
+
 .skeleton-stage svg,
 .curve-stage svg {
   display: block;

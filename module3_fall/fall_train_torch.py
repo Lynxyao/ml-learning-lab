@@ -35,6 +35,32 @@ def predict(model: nn.Module, x: np.ndarray, batch_size: int, device: torch.devi
     return p, (p >= 0.5).astype(np.int64)
 
 
+def parse_checkpoint_epochs(value: str, max_epochs: int) -> list[int]:
+    epochs = sorted({int(item.strip()) for item in value.split(",") if item.strip()})
+    invalid = [epoch for epoch in epochs if epoch < 1 or epoch > max_epochs]
+    if invalid:
+        raise ValueError(f"Checkpoint epochs must be between 1 and {max_epochs}: {invalid}")
+    return epochs
+
+
+def checkpoint_payload(
+    model: nn.Module,
+    args: argparse.Namespace,
+    data: object,
+    epoch: int,
+) -> dict[str, object]:
+    return {
+        "model_state": model.state_dict(),
+        "model_type": args.model,
+        "hidden_size": args.hidden_size,
+        "mean": data.mean,
+        "std": data.std,
+        "data_npz": str(args.data_npz),
+        "epoch": epoch,
+        "seed": args.seed,
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train an RNN fall prediction model.")
     parser.add_argument("--data_npz", type=Path, default=DEFAULT_DATA)
@@ -45,7 +71,13 @@ def main() -> None:
     parser.add_argument("--hidden_size", type=int, default=48)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--seed", type=int, default=7)
+    parser.add_argument(
+        "--checkpoint_epochs",
+        default="5,10,15,20,25,30",
+        help="Comma-separated epochs to save and evaluate for the website checkpoint gallery.",
+    )
     args = parser.parse_args()
+    checkpoint_epochs = parse_checkpoint_epochs(args.checkpoint_epochs, args.epochs)
 
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
@@ -97,19 +129,15 @@ def main() -> None:
             f"val_f1={row['val_f1_fall']:.4f}"
         )
 
+        if epoch in checkpoint_epochs:
+            torch.save(
+                checkpoint_payload(model, args, data, epoch),
+                ckpt_dir / f"epoch_{epoch:03d}.pt",
+            )
+
         if row["val_f1_fall"] > best_val_f1:
             best_val_f1 = row["val_f1_fall"]
-            torch.save(
-                {
-                    "model_state": model.state_dict(),
-                    "model_type": args.model,
-                    "hidden_size": args.hidden_size,
-                    "mean": data.mean,
-                    "std": data.std,
-                    "data_npz": str(args.data_npz),
-                },
-                best_path,
-            )
+            torch.save(checkpoint_payload(model, args, data, epoch), best_path)
 
     checkpoint = torch.load(best_path, map_location=device, weights_only=False)
     model.load_state_dict(checkpoint["model_state"])
@@ -120,6 +148,43 @@ def main() -> None:
     (args.output_dir / "train_history.json").write_text(json.dumps(history, indent=2), encoding="utf-8")
     (args.output_dir / "test_metrics.json").write_text(json.dumps(test_metrics, indent=2), encoding="utf-8")
     np.savez_compressed(args.output_dir / "test_predictions.npz", probs=test_probs, pred=test_pred, y_true=data.y_test)
+
+    checkpoint_results: list[dict[str, object]] = []
+    for epoch in checkpoint_epochs:
+        checkpoint_path = ckpt_dir / f"epoch_{epoch:03d}.pt"
+        checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
+        model.load_state_dict(checkpoint["model_state"])
+        val_probs, val_pred = predict(model, data.x_val, args.batch_size, device)
+        test_probs, test_pred = predict(model, data.x_test, args.batch_size, device)
+        result = {
+            "epoch": epoch,
+            "validation": classification_metrics(data.y_val, val_pred),
+            "test": classification_metrics(data.y_test, test_pred),
+        }
+        checkpoint_results.append(result)
+        np.savez_compressed(
+            args.output_dir / f"epoch_{epoch:03d}_predictions.npz",
+            val_probs=val_probs,
+            val_pred=val_pred,
+            y_val=data.y_val,
+            test_probs=test_probs,
+            test_pred=test_pred,
+            y_test=data.y_test,
+        )
+
+    (args.output_dir / "checkpoint_results.json").write_text(
+        json.dumps(
+            {
+                "model": args.model,
+                "hidden_size": args.hidden_size,
+                "seed": args.seed,
+                "checkpoint_epochs": checkpoint_epochs,
+                "checkpoints": checkpoint_results,
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
 
     print("\nTest metrics")
     for key, value in test_metrics.items():

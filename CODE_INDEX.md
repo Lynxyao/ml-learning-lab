@@ -14,6 +14,8 @@ This repository pairs a static student website with local prototype code.
 - `module1_wfm/` - WFM image-to-image learning prototype
 - `module2_ecg/` - ECG beat classification prototype
 - `module3_fall/` - public fall/motion sequence modeling prototype
+  - `fall_train_torch.py` - GRU/LSTM training with milestone checkpoint export
+  - `render_checkpoint_gallery.py` - held-out checkpoint figures and website JSON
 - `module4_resistive_array/` - 8x8 resistive-array inverse-modeling research prototype
   - `run_mlp_baseline_8x8.py` - data-only MLP baseline
   - `hybrid_physics_gnn.py` - V/I proxy plus local GNN correction and uncertainty

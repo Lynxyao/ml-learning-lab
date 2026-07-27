@@ -714,11 +714,20 @@ if (motionEpochs) {
   });
 }
 
-const motionCurveSets = {
-  posture: [4, 5, 6, 8, 9, 10, 9, 8, 7, 6, 5, 4],
-  rom: [8, 16, 28, 42, 58, 71, 82, 88, 84, 73, 55, 34],
-  gait: [22, 31, 43, 36, 24, 18, 27, 41, 45, 33, 21, 17],
-};
+let motionCheckpointResults = null;
+const motionCheckpointRequest = fetch("assets/module3/checkpoint-results.json")
+  .then((response) => {
+    if (!response.ok) throw new Error(`Checkpoint results returned ${response.status}`);
+    return response.json();
+  })
+  .then((payload) => {
+    motionCheckpointResults = payload;
+    return payload;
+  })
+  .catch((error) => {
+    console.warn("Module 3 checkpoint results could not be loaded.", error);
+    return null;
+  });
 
 const holomotionFeatureGroups = {
   timing: {
@@ -887,101 +896,67 @@ if (resistanceProjectPlanButton) {
   });
 }
 
-function drawMotionCurve(task) {
-  const svg = document.querySelector("#motion-curve");
-  if (!svg) return;
-  const values = motionCurveSets[task] || motionCurveSets.posture;
-  const max = Math.max(...values);
-  const min = Math.min(...values);
-  const range = Math.max(max - min, 1);
-  const coords = values.map((value, index) => {
-    const x = 34 + (index / (values.length - 1)) * 352;
-    const y = 178 - ((value - min) / range) * 128;
-    return { x, y, value };
-  });
-  const path = coords.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
-  const nodes = coords
-    .map((point) => `<circle cx="${point.x}" cy="${point.y}" r="4.5" class="curve-node"><title>${point.value} degrees</title></circle>`)
-    .join("");
-
-  svg.innerHTML = `
-    <title id="motion-curve-title">Simulated ${task} joint angle sequence</title>
-    <rect x="0" y="0" width="420" height="220" rx="8" class="curve-bg" />
-    <line x1="34" y1="178" x2="386" y2="178" class="curve-axis" />
-    <line x1="34" y1="38" x2="34" y2="178" class="curve-axis" />
-    <path d="${path}" class="curve-line" />
-    ${nodes}
-    <text x="34" y="28" class="curve-label">Joint angle over time</text>
-    <text x="310" y="202" class="curve-label">frames</text>
-  `;
-}
-
 const motionButton = document.querySelector("#run-motion-sim");
 if (motionButton) {
   motionButton.addEventListener("click", () => {
-    const task = document.querySelector('input[name="motion-task"]:checked').value;
-    const model = document.querySelector('input[name="motion-model"]:checked').value;
     const epochs = Number(document.querySelector("#motion-epochs").value);
-    runMotionPrototype({ task, model, epochs });
+    runMotionPrototype(epochs);
   });
 }
 
-function runMotionPrototype({ task, model, epochs }) {
+async function runMotionPrototype(epochs) {
   const meter = document.querySelector("#motion-meter");
   const copy = document.querySelector("#motion-training-copy");
   meter.style.width = "0";
-  copy.textContent = `Preparing simulated ${task} features for a ${model === "rnn" ? "sequence" : "skeleton graph"} model...`;
+  copy.textContent = `Loading the epoch ${epochs} GRU checkpoint and its held-out predictions...`;
 
   window.setTimeout(() => {
     meter.style.width = "42%";
-    copy.textContent =
-      model === "rnn"
-        ? "The model reads ordered frames, so timing and movement shape matter."
-        : "The model reads body landmarks as connected nodes, so anatomical structure matters.";
+    copy.textContent = "Reading the saved confusion matrix, probability distribution, and metrics.";
   }, 450);
+
+  const payload = motionCheckpointResults || (await motionCheckpointRequest);
+  const checkpoint = payload?.checkpoints?.find((item) => Number(item.epoch) === epochs);
 
   window.setTimeout(() => {
     meter.style.width = "76%";
-    copy.textContent = "Validation checks whether the model recognizes abnormal movement without overclaiming diagnosis.";
+    copy.textContent = checkpoint
+      ? "The checkpoint comes from the same training run and is evaluated on the same subject-held-out split."
+      : "The requested checkpoint result is unavailable.";
   }, 1000);
 
   window.setTimeout(() => {
     meter.style.width = "100%";
-    copy.textContent = `${epochs}-epoch prototype run complete. Open the Test step to inspect simulated metrics.`;
-    labState.motion = { task, model, epochs };
+    if (!checkpoint) {
+      copy.textContent = "Checkpoint data could not be loaded. Refresh the page and try again.";
+      return;
+    }
+    copy.textContent = `Epoch ${epochs} checkpoint loaded. Open Test to inspect its real held-out results.`;
+    labState.motion = { epochs, checkpoint };
     updateMotionTest();
   }, 1550);
 }
 
 function updateMotionTest() {
   if (!labState.motion) return;
-  const { task, model, epochs } = labState.motion;
-  const modelLabel = model === "rnn" ? "RNN/LSTM" : "Skeleton graph";
-  const taskLabel = {
-    posture: "static posture risk",
-    rom: "joint range of motion",
-    gait: "gait sequence",
-  }[task];
-  const metricSeed = task === "posture" ? 0 : task === "rom" ? 1 : 2;
-  const modelBoost = model === "graph" && task === "posture" ? 0.04 : model === "rnn" && task !== "posture" ? 0.05 : 0;
-  const accuracy = Math.min(0.91, 0.76 + epochs * 0.004 + metricSeed * 0.015 + modelBoost);
-  const recall = Math.min(0.88, 0.65 + epochs * 0.005 + metricSeed * 0.02 + modelBoost);
-  const error = Math.max(3.2, 9.8 - epochs * 0.13 - modelBoost * 20);
-
-  document.querySelector("#motion-test-run-pill").textContent = `${modelLabel} · ${epochs} epochs`;
+  const { epochs, checkpoint } = labState.motion;
+  const metrics = checkpoint.test;
+  document.querySelector("#motion-test-run-pill").textContent = `GRU - epoch ${epochs}`;
   document.querySelector("#motion-test-run-pill").classList.add("ready");
   document.querySelector("#motion-run-summary").innerHTML = `
-    <strong>Your simulated ${taskLabel} run</strong>
-    <p>Model: ${modelLabel}. This prototype uses generated coordinates and angle curves until real device exports are available.</p>
+    <strong>Saved bidirectional GRU checkpoint</strong>
+    <p>This is an actual model state from epoch ${epochs}, evaluated on the same subject-held-out test set. The slider no longer invents metrics from an epoch formula.</p>
   `;
-  document.querySelector("#motion-accuracy").textContent = accuracy.toFixed(2);
-  document.querySelector("#motion-recall").textContent = recall.toFixed(2);
-  document.querySelector("#motion-error").textContent = `${error.toFixed(1)}°`;
+  document.querySelector("#motion-accuracy").textContent = Number(metrics.accuracy).toFixed(3);
+  document.querySelector("#motion-recall").textContent = Number(metrics.recall_fall).toFixed(3);
+  document.querySelector("#motion-f1").textContent = Number(metrics.f1_fall).toFixed(3);
+  const figure = document.querySelector("#motion-checkpoint-figure");
+  const figurePath = `assets/module3/checkpoint-epoch-${String(epochs).padStart(2, "0")}.png`;
+  figure.src = figurePath;
+  figure.alt = `Epoch ${epochs} GRU held-out confusion matrix, probability distribution, and metrics`;
+  document.querySelector("#motion-checkpoint-link").href = figurePath;
   document.querySelector("#motion-curve-copy").textContent =
-    task === "posture"
-      ? "A static posture task can still be represented as landmark offsets, but it has less temporal information than gait or ROM."
-      : "This sequence is the kind of frame-by-frame signal an RNN can use to learn movement patterns.";
-  drawMotionCurve(task);
+    "Compare epochs using both average scores and the confusion matrix. Later epochs are not guaranteed to improve every metric.";
 }
 
 const resistanceBaseMaps = {
