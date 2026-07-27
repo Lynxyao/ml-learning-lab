@@ -1,32 +1,51 @@
-# Optional Study Backend
+# Anonymous Pilot Backend
 
-The public GitHub Pages site works without this backend. In its default mode,
-participation codes, visits, and pre/post assessments remain in browser storage.
+The website can use Supabase anonymous Auth to create one de-identified
+participant account per browser. Email, name, and OSU username are not required.
 
-Enable the backend only after the instructional team confirms consent language,
-accessibility, privacy, retention, and any course or human-subject research review.
+## Setup
 
-## Supabase setup
+1. Create a Supabase project approved for the pilot.
+2. In **Authentication > Providers**, enable **Anonymous Sign-Ins**.
+3. Consider enabling CAPTCHA before a public launch to reduce automated signups.
+4. Open the Supabase SQL editor and run `schema.sql`.
+5. Copy `website/study-config.example.js` to `website/study-config.js`.
+6. Set `enabled: true`, the project URL, and the public anon/publishable key.
+7. Add the website URL to the Supabase redirect/site URL allowlist.
+8. Deploy the website and test with a new private browser window.
 
-1. Create a Supabase project controlled by the instructional team.
-2. Run `schema.sql` in the Supabase SQL editor.
-3. Enable email magic-link authentication and add the GitHub Pages URL to the
-   allowed redirect URLs.
-4. Copy `website/study-config.example.js` to `website/study-config.js`.
-5. Set `enabled: true`, the project URL, and the public anonymous key.
-6. Do not place a service-role key in the website.
+Never place the service-role key in website JavaScript. The public key is safe
+to expose only because Row Level Security requires every uploaded record to match
+the current anonymous Auth user.
 
-The browser sends records only when the student checks the consent box. The public
-client can insert but cannot read individual records. The exposed RPC returns only a
-distinct participant count.
+The schema is intended for a fresh pilot project. If an earlier draft of the
+schema was already installed, remove its empty draft tables before running this
+version. Do not drop tables after real participant collection has begun.
 
-## Important limitations
+## What Is Recorded
 
-- A public anonymous endpoint can be spammed, so the count is a usage estimate rather
-  than a research-quality enrollment count.
-- Formal analysis should deduplicate records, document exclusions, and use an approved
-  export path controlled by the instructional team.
-- Do not collect names, health details, raw motion files, or free-text medical content
-  through these tables.
-- Set and document a retention/deletion schedule before enabling data collection.
+- one participant row after consent and `Begin Learning`
+- one module-view event per module per page session
+- submitted pre/post concept score, confidence, and selected answer indices
 
+The website does not upload imported motion files, notes, names, email addresses,
+or OSU identifiers.
+
+## Viewing Results
+
+Use the Supabase table editor for detailed authorized review:
+
+- `participants`: de-identified participant count and consent version
+- `usage_events`: module visits
+- `assessment_responses`: pre/post learning records
+
+The public website can call `public_participant_count()` but cannot select
+individual rows. Export or analyze individual records only from an authorized
+administrator account.
+
+## Study Boundary
+
+Finalize the consent language, retention period, deletion procedure, accessibility
+review, and any required course or human-subjects review before central collection
+is enabled. Anonymous browser accounts reduce direct identifiers but do not by
+themselves make a study exempt from institutional requirements.

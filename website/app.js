@@ -18,6 +18,15 @@ document.querySelectorAll(".repo-link").forEach((link) => {
 });
 
 function showView(targetId) {
+  if (protectedStudyTargets.has(targetId) && !hasParticipationAccess()) {
+    targetId = "home";
+    const status = document.querySelector("#start-gate-status");
+    if (status) {
+      status.textContent = "Consent and begin the pilot before opening a learning module.";
+    }
+    document.querySelector("#start-gate")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   views.forEach((view) => {
     view.classList.toggle("active", view.id === targetId);
   });
@@ -108,8 +117,10 @@ const moduleAssessments = {
 
 const studyStorageKey = "ml-learning-lab-study-v1";
 const studyConfig = window.STUDY_CONFIG || { enabled: false };
+const protectedStudyTargets = new Set(["wfm", "ecg", "motion", "resistance", "notebook"]);
 const sessionVisitedModules = new Set();
 let studyClient = null;
+let authenticatedParticipantId = null;
 
 function loadStudyState() {
   try {
@@ -117,11 +128,18 @@ function loadStudyState() {
     return {
       participantId: saved.participantId || crypto.randomUUID(),
       consent: Boolean(saved.consent),
+      started: Boolean(saved.started),
       visits: Array.isArray(saved.visits) ? saved.visits : [],
       assessments: Array.isArray(saved.assessments) ? saved.assessments : [],
     };
   } catch {
-    return { participantId: crypto.randomUUID(), consent: false, visits: [], assessments: [] };
+    return {
+      participantId: crypto.randomUUID(),
+      consent: false,
+      started: false,
+      visits: [],
+      assessments: [],
+    };
   }
 }
 
@@ -134,6 +152,52 @@ function saveStudyState() {
     // The current page session still works when browser storage is unavailable.
   }
   updateStudyDashboard();
+  updateAccessGate();
+}
+
+function studyBackendEnabled() {
+  return Boolean(studyConfig.enabled && studyConfig.supabaseUrl && studyConfig.supabaseAnonKey);
+}
+
+function hasParticipationAccess() {
+  const validBackendSession = !studyBackendEnabled() || authenticatedParticipantId === studyState.participantId;
+  return studyState.started && studyState.consent && validBackendSession;
+}
+
+function updateAccessGate() {
+  const hasAccess = hasParticipationAccess();
+  const startConsent = document.querySelector("#start-consent");
+  const studyConsent = document.querySelector("#study-consent");
+  const status = document.querySelector("#start-gate-status");
+  const code = document.querySelector("#start-participant-code");
+  const begin = document.querySelector("#start-begin");
+
+  if (startConsent) startConsent.checked = studyState.consent;
+  if (studyConsent) studyConsent.checked = studyState.consent;
+  if (begin) {
+    begin.textContent = hasAccess ? "Modules Unlocked" : "Begin Learning";
+    begin.disabled = hasAccess;
+  }
+  if (status) {
+    status.textContent = hasAccess
+      ? studyBackendEnabled()
+        ? "Anonymous participation is active and the modules are unlocked."
+        : "Local preview participation is active. Connect Supabase to enable central counting."
+      : "Complete consent to unlock the modules.";
+  }
+  if (code) {
+    code.textContent = hasAccess
+      ? `Participant ${studyState.participantId.split("-")[0].toUpperCase()}`
+      : "No participation code yet";
+  }
+
+  document.querySelectorAll("[data-target]").forEach((button) => {
+    if (!protectedStudyTargets.has(button.dataset.target)) return;
+    button.disabled = !hasAccess;
+    button.classList.toggle("access-locked", !hasAccess);
+    button.setAttribute("aria-disabled", String(!hasAccess));
+    button.title = hasAccess ? "" : "Begin the anonymous pilot from the Start page first.";
+  });
 }
 
 function assessmentRecord(moduleName, phase) {
@@ -285,69 +349,120 @@ function updateStudyDashboard() {
   document.querySelector("#study-paired-count").textContent = String(paired);
 }
 
+async function refreshGlobalParticipantCount() {
+  if (!studyClient) return;
+  const { data, error } = await studyClient.rpc("public_participant_count");
+  if (!error && Number.isFinite(Number(data))) {
+    document.querySelector("#study-global-count").textContent = String(data);
+  }
+}
+
 async function initializeStudyBackend() {
-  const enabled = Boolean(studyConfig.enabled && studyConfig.supabaseUrl && studyConfig.supabaseAnonKey);
-  const signIn = document.querySelector("#study-sign-in");
-  const signOut = document.querySelector("#study-sign-out");
-  const email = document.querySelector("#study-email");
-  signIn.disabled = !enabled;
-  signOut.disabled = !enabled;
-  email.disabled = !enabled;
+  const enabled = studyBackendEnabled();
   if (!enabled) {
+    document.querySelector("#study-mode-copy").textContent =
+      "Local preview mode is active. This device can test the consent gate, but records are not included in a global count until Supabase is configured.";
     updateStudyDashboard();
+    updateAccessGate();
     return;
   }
   try {
     const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm");
     studyClient = createClient(studyConfig.supabaseUrl, studyConfig.supabaseAnonKey);
-    document.querySelector("#study-mode-copy").textContent =
-      "Approved study tracking is available. Records are sent only after you check the consent box.";
-    document.querySelector("#study-auth-copy").textContent = "Use a passwordless email link to sign in.";
-    const { data } = await studyClient.rpc("public_participant_count");
-    if (Number.isFinite(Number(data))) {
-      document.querySelector("#study-global-count").textContent = String(data);
+    const { data: sessionData } = await studyClient.auth.getSession();
+    authenticatedParticipantId = sessionData.session?.user?.id || null;
+    if (authenticatedParticipantId && studyState.started) {
+      studyState.participantId = authenticatedParticipantId;
+      saveStudyState();
     }
+    document.querySelector("#study-mode-copy").textContent =
+      "Anonymous pilot tracking is available. Records are sent only after consent and Begin Learning.";
+    document.querySelector("#study-auth-copy").textContent = authenticatedParticipantId
+      ? "An anonymous backend session is active on this browser."
+      : "Begin from the Start page to create an anonymous backend session.";
+    await refreshGlobalParticipantCount();
   } catch (error) {
     document.querySelector("#study-auth-copy").textContent = `Study backend unavailable: ${error.message}`;
   }
   updateStudyDashboard();
+  updateAccessGate();
 }
 
 async function syncStudyRecord(table, payload) {
-  if (!studyClient || !studyState.consent) return;
+  if (!studyClient || !studyState.consent || !studyState.started) return;
   const { data } = await studyClient.auth.getSession();
   const userId = data.session?.user?.id || null;
-  await studyClient.from(table).insert({ ...payload, user_id: userId });
+  if (!userId || userId !== studyState.participantId) return;
+  const { error } = await studyClient.from(table).insert({
+    ...payload,
+    participant_id: userId,
+    user_id: userId,
+  });
+  if (error) {
+    console.warn(`Unable to sync ${table}:`, error.message);
+  }
 }
 
 renderAssessments();
 updateStudyDashboard();
-initializeStudyBackend();
+updateAccessGate();
+const studyBackendReady = initializeStudyBackend();
 
-document.querySelector("#study-consent").addEventListener("change", (event) => {
+function updateConsent(event) {
   studyState.consent = event.target.checked;
+  if (!studyState.consent) {
+    studyState.started = false;
+  }
   saveStudyState();
-});
+}
 
-document.querySelector("#study-sign-in").addEventListener("click", async () => {
-  if (!studyClient) return;
-  const email = document.querySelector("#study-email").value.trim();
-  const copy = document.querySelector("#study-auth-copy");
-  if (!email) {
-    copy.textContent = "Enter an email address first.";
+document.querySelector("#start-consent").addEventListener("change", updateConsent);
+document.querySelector("#study-consent").addEventListener("change", updateConsent);
+
+document.querySelector("#start-begin").addEventListener("click", async () => {
+  const status = document.querySelector("#start-gate-status");
+  if (!studyState.consent) {
+    status.textContent = "Check the consent box before beginning.";
     return;
   }
-  const { error } = await studyClient.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: `${location.origin}${location.pathname}` },
-  });
-  copy.textContent = error ? error.message : "Check your email for the passwordless sign-in link.";
-});
 
-document.querySelector("#study-sign-out").addEventListener("click", async () => {
-  if (!studyClient) return;
-  await studyClient.auth.signOut();
-  document.querySelector("#study-auth-copy").textContent = "Signed out.";
+  await studyBackendReady;
+  if (studyBackendEnabled()) {
+    if (!studyClient) {
+      status.textContent = "The participation backend is unavailable. Please try again.";
+      return;
+    }
+    let { data: sessionData } = await studyClient.auth.getSession();
+    if (!sessionData.session) {
+      status.textContent = "Creating an anonymous participation session...";
+      const { data, error } = await studyClient.auth.signInAnonymously();
+      if (error || !data.user) {
+        status.textContent = error?.message || "Unable to create an anonymous session.";
+        return;
+      }
+      sessionData = { session: data.session };
+    }
+    authenticatedParticipantId = sessionData.session.user.id;
+    studyState.participantId = authenticatedParticipantId;
+    const { error } = await studyClient.from("participants").upsert({
+      user_id: authenticatedParticipantId,
+      participant_id: authenticatedParticipantId,
+      consent_version: studyConfig.consentVersion || "pilot-2026-07",
+      consented_at: new Date().toISOString(),
+      last_seen_at: new Date().toISOString(),
+    });
+    if (error) {
+      status.textContent = `Unable to save participation: ${error.message}`;
+      return;
+    }
+    await refreshGlobalParticipantCount();
+  }
+
+  studyState.started = true;
+  saveStudyState();
+  document.querySelector("#study-auth-copy").textContent = studyBackendEnabled()
+    ? "An anonymous backend session is active on this browser."
+    : "Local preview session is active. Central counting begins after Supabase is configured.";
 });
 
 let backendAvailable = false;

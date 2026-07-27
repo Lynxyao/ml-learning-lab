@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Interactive ML Learning Lab</title>
-    <link rel="stylesheet" href="styles.css?v=20260728m4" />
+    <link rel="stylesheet" href="styles.css?v=20260728m5" />
   </head>
   <body>
     <aside class="sidebar" aria-label="Learning lab navigation">
@@ -38,6 +38,25 @@
     <main class="app-shell">
       <section class="view active" id="home" aria-labelledby="home-title">
         <div class="section-kicker">Student learning space</div>
+        <section class="start-gate" id="start-gate" aria-labelledby="start-gate-title">
+          <div class="start-gate-copy">
+            <span class="reference-tag">Required before entering a module</span>
+            <h2 id="start-gate-title">Begin with a private participation record</h2>
+            <p>
+              The pilot records module visits and matched pre/post learning checks under an
+              anonymous participant ID. It does not ask for your name, email, or OSU username.
+            </p>
+            <label class="toggle-line start-consent-line">
+              <input id="start-consent" type="checkbox" />
+              I understand the pilot record described above and consent to participate.
+            </label>
+          </div>
+          <div class="start-gate-action">
+            <button class="primary-action" id="start-begin" type="button">Begin Learning</button>
+            <strong id="start-gate-status" aria-live="polite">Complete consent to unlock the modules.</strong>
+            <span id="start-participant-code">No participation code yet</span>
+          </div>
+        </section>
         <div class="hero-grid">
           <div class="hero-copy">
             <h1 id="home-title">Learn machine learning by running guided biomedical experiments</h1>
@@ -1683,7 +1702,7 @@
           <article class="lesson-panel">
             <h2>How Students Participate</h2>
             <div class="participation-flow">
-              <div><strong>1. Access</strong><span>Open the public website without installing Python. Approved studies may optionally enable passwordless sign-in.</span></div>
+              <div><strong>1. Access</strong><span>Review the pilot notice, consent, and create an anonymous participation session before opening a module.</span></div>
               <div><strong>2. Predict</strong><span>Answer a prompt before revealing the saved model result.</span></div>
               <div><strong>3. Investigate</strong><span>Change guided settings, compare cases, and inspect metrics or error maps.</span></div>
               <div><strong>4. Assess</strong><span>Complete the quiz, reflection, and mini-project report for the selected module.</span></div>
@@ -1696,7 +1715,7 @@
                 <tr><th>Available now</th><td>Guided activities, quizzes, reflection prompts, saved experiments, code links, and mini-project templates.</td></tr>
                 <tr><th>Student evidence</th><td>Each module now includes matched pre/post concept and confidence checks. Results remain in the student's browser by default.</td></tr>
                 <tr><th>Local record</th><td>A random participation code, module visits, and assessment summaries are stored on the current device. Selected motion files are parsed locally and are not uploaded.</td></tr>
-                <tr><th>Approved extension</th><td>The included Supabase configuration can enable passwordless sign-in, de-identified usage counts, and assessment export after consent and institutional review.</td></tr>
+                <tr><th>Approved extension</th><td>The included Supabase configuration can enable anonymous Auth, de-identified usage counts, and assessment export after consent and institutional review.</td></tr>
               </tbody>
             </table>
             <div class="boundary-note">
@@ -1722,13 +1741,10 @@
               I consent to send de-identified usage and assessment records if approved study tracking is enabled.
             </label>
             <div class="auth-panel">
-              <label for="study-email">Email for passwordless sign-in</label>
-              <input id="study-email" type="email" autocomplete="email" placeholder="name@university.edu" />
-              <div class="button-row">
-                <button class="primary-button" id="study-sign-in" type="button">Send sign-in link</button>
-                <button class="secondary-button" id="study-sign-out" type="button">Sign out</button>
-              </div>
-              <p class="small-note" id="study-auth-copy">Sign-in becomes available after the approved study backend is configured.</p>
+              <strong>Anonymous pilot session</strong>
+              <p class="small-note" id="study-auth-copy">
+                Begin from the Start page to create a participation session. No email address is required.
+              </p>
             </div>
           </article>
           <article class="lesson-panel">
@@ -2024,7 +2040,7 @@
     </main>
 
     <script src="deploy-config.js?v=20260708"></script>
-    <script src="study-config.js?v=20260728"></script>
-    <script src="app.js?v=20260728m4"></script>
+    <script src="study-config.js?v=20260728m5"></script>
+    <script src="app.js?v=20260728m5"></script>
   </body>
 </html>
