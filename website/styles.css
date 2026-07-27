@@ -594,6 +594,13 @@ input[type="range"] {
   transition: width 500ms ease;
 }
 
+#resistance-history-chart {
+  display: block;
+  width: 100%;
+  height: 180px;
+  margin-top: 18px;
+}
+
 .study-list {
   display: grid;
   gap: 12px;

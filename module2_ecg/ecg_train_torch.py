@@ -72,6 +72,11 @@ def main():
     parser.add_argument("--test_fraction", type=float, default=0.15)
     parser.add_argument("--split_mode", default="record", choices=["record", "random"])
     parser.add_argument("--class_weighting", default="inverse", choices=["none", "inverse"])
+    parser.add_argument(
+        "--checkpoint_epochs",
+        default="",
+        help="Comma-separated epochs to save as epoch_N.pth in addition to latest/best.",
+    )
     args = parser.parse_args()
     args.data_npz = resolve_project_path(args.data_npz)
     args.save_root = resolve_project_path(args.save_root)
@@ -106,6 +111,11 @@ def main():
         weights = None
         criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    checkpoint_epochs = {
+        int(value.strip())
+        for value in args.checkpoint_epochs.split(",")
+        if value.strip()
+    }
 
     os.makedirs(args.save_root, exist_ok=True)
     ckpt_dir = os.path.join(args.save_root, "checkpoints")
@@ -160,6 +170,8 @@ def main():
         )
 
         torch.save(model.state_dict(), os.path.join(ckpt_dir, "latest_model.pth"))
+        if epoch in checkpoint_epochs:
+            torch.save(model.state_dict(), os.path.join(ckpt_dir, f"epoch_{epoch}.pth"))
         if val_acc > best_val_acc:
             best_val_acc = val_acc
             torch.save(model.state_dict(), os.path.join(ckpt_dir, "best_model.pth"))

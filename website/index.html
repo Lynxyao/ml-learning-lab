@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Interactive ML Learning Lab</title>
-    <link rel="stylesheet" href="styles.css?v=20260727m2" />
+    <link rel="stylesheet" href="styles.css?v=20260728m3" />
   </head>
   <body>
     <aside class="sidebar" aria-label="Learning lab navigation">
@@ -203,8 +203,12 @@
                 <div><strong>GAN loss</strong><p>Adds realism pressure from the discriminator.</p></div>
                 <div><strong>L1 loss</strong><p>Adds pixel-level target similarity, often smoothing details.</p></div>
               </div>
-              <label class="slider-label" for="wfm-epochs">Checkpoint epoch <strong id="wfm-epoch-label">20</strong></label>
-              <input id="wfm-epochs" type="range" min="20" max="200" value="20" step="20" />
+              <label class="slider-label" for="wfm-epochs">Saved checkpoint</label>
+              <select id="wfm-epochs">
+                <option value="20">Epoch 20</option>
+                <option value="100">Epoch 100</option>
+                <option value="200">Epoch 200</option>
+              </select>
               <div class="option-list">
                 <label><input id="wfm-use-gan" type="checkbox" checked /> Use GAN loss</label>
                 <label><input id="wfm-use-l1" type="checkbox" checked /> Use L1 reconstruction loss</label>
@@ -239,7 +243,7 @@
               </div>
               <img id="wfm-test-image" src="assets/wfm-result-100.png" alt="WFM generated result comparison" />
               <p id="wfm-test-caption">
-                Run training first, then this panel will show the closest saved checkpoint for your selected epoch.
+                Load one of the three actual saved checkpoints to compare its generated output.
               </p>
             </article>
             <article class="lesson-panel">
@@ -527,11 +531,11 @@
             </article>
             <article class="lesson-panel">
               <h2>Training Options</h2>
-              <label class="slider-label" for="ecg-epochs">Epochs <strong id="ecg-epoch-label">10</strong></label>
-              <input id="ecg-epochs" type="range" min="3" max="30" value="10" step="1" />
+              <label class="slider-label" for="ecg-epochs">Saved checkpoint <strong id="ecg-epoch-label">Epoch 4</strong></label>
+              <input id="ecg-epochs" type="range" min="0" max="5" value="2" step="1" />
               <label class="toggle-line"><input id="class-weighting" type="checkbox" checked /> Use class weighting</label>
               <p class="small-note">
-                Class weighting gives rare classes more influence in the loss. More epochs are not automatically better; students should compare validation behavior and test errors.
+                The online checkpoints use one fixed teaching dataset, split, 1D CNN, and class weighting so epoch is the only changing variable. More epochs are not automatically better; compare validation behavior and held-out errors.
               </p>
               <button class="secondary-action" id="load-ecg-saved">Load saved experiment</button>
               <div class="advanced-local">
@@ -1266,6 +1270,8 @@
               <p id="resistance-training-copy">
                 Select a model to inspect its inputs, inductive bias, physics constraint, and held-out result.
               </p>
+              <canvas id="resistance-history-chart" aria-label="Validation metric across real training epochs"></canvas>
+              <p class="small-note" id="resistance-history-copy">Loading the selected model's real validation history...</p>
             </article>
           </div>
         </div>
@@ -1959,6 +1965,6 @@
     </main>
 
     <script src="deploy-config.js?v=20260708"></script>
-    <script src="app.js?v=20260727m2"></script>
+    <script src="app.js?v=20260728m3"></script>
   </body>
 </html>

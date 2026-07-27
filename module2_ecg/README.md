@@ -13,6 +13,7 @@ Train a time-series model on segmented ECG beats and classify arrhythmia beat ca
 - `ecg_dataset.py`: dataset classes, label mapping, and optional MIT-BIH preprocessing helper.
 - `ecg_train_torch.py`: train ECG classifiers.
 - `ecg_test_torch.py`: evaluate a trained checkpoint and save metrics.
+- `build_checkpoint_assets.py`: export held-out metrics and confusion matrices for the website's saved epoch series.
 - `ecg_visualize.py`: save ECG segment plots for teaching/demo pages.
 - `generate_demo_ecg_data.py`: create synthetic ECG-like data for quick smoke tests.
 - `requirements_ecg.txt`: optional ECG-specific dependencies.
@@ -61,6 +62,19 @@ python module2_ecg/ecg_train_torch.py --data_npz data/ecg/demo_beat_segments.npz
 python module2_ecg/ecg_test_torch.py --data_npz data/ecg/demo_beat_segments.npz --checkpoint ecg_results/checkpoints/best_model.pth --model cnn
 python module2_ecg/ecg_visualize.py --data_npz data/ecg/demo_beat_segments.npz --max_samples 12
 ```
+
+The public teaching page uses six real checkpoints from one controlled synthetic-data run.
+Only epoch changes; the dataset, split, model, weighting, and test set stay fixed. Reproduce
+the website assets with:
+
+```bash
+python module2_ecg/generate_demo_ecg_data.py --samples_per_class 160
+python module2_ecg/ecg_train_torch.py --data_npz data/ecg/demo_beat_segments.npz --model cnn --save_root ecg_results/teaching_checkpoints --epochs 10 --split_mode random --class_weighting inverse --checkpoint_epochs 1,3,4,5,6,10
+python module2_ecg/build_checkpoint_assets.py
+```
+
+These synthetic results demonstrate training behavior only. They are not clinical validation
+and must not be reported as MIT-BIH performance.
 
 ### Option B: Train With Prepared MIT-BIH Data
 

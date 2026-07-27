@@ -1,0 +1,91 @@
+{
+  "accuracy": 0.2,
+  "macro_precision": 0.04,
+  "macro_recall": 0.2,
+  "macro_f1": 0.06666666666666668,
+  "per_class": [
+    {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support": 28
+    },
+    {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support": 17
+    },
+    {
+      "precision": 0.2,
+      "recall": 1.0,
+      "f1": 0.33333333333333337,
+      "support": 24
+    },
+    {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support": 26
+    },
+    {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support": 25
+    }
+  ],
+  "confusion_matrix": [
+    [
+      0,
+      0,
+      28,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      17,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      24,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      26,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      25,
+      0,
+      0
+    ]
+  ],
+  "label_names": [
+    "N",
+    "SVEB",
+    "VEB",
+    "F",
+    "Q"
+  ],
+  "epoch": 1,
+  "dataset": "Synthetic ECG teaching data (not clinical data)",
+  "model": "1D CNN",
+  "class_weighting": "inverse frequency",
+  "split": "fixed random held-out split",
+  "train_loss": 1.157774825890859,
+  "train_acc": 0.5555555555555556,
+  "val_loss": 1.6857338547706604,
+  "val_acc": 0.1830357164144516
+}
