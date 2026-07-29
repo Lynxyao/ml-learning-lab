@@ -221,15 +221,14 @@
                 <div><strong>What should not leak?</strong><p>The same or nearly identical pair should not appear in both train and test.</p></div>
                 <div><strong>What does the model see?</strong><p>The input image only. The target image is used for training loss and evaluation.</p></div>
               </div>
-              <h2>Choose the Data Split</h2>
-              <div class="option-list">
-                <label><input type="radio" name="wfm-split" checked /> 242 train / 10 test</label>
-                <label><input type="radio" name="wfm-split" /> 200 train / 52 test</label>
-                <label><input type="radio" name="wfm-split" /> Random split each run</label>
+              <h2>Guided Data Split</h2>
+              <div class="check-box">
+                <strong>242 train / 10 held-out test pairs</strong>
+                <p>All three online checkpoint images use this same fixed split so students can compare epochs fairly.</p>
               </div>
               <div class="feedback-box">
-                <strong>Recommended</strong>
-                <p>Use a fixed held-out test set so your result images are comparable across runs.</p>
+                <strong>Optional local mini-project extension</strong>
+                <p>Students using the GitHub code can compare a different split or repeat a random split, but those choices do not change the prepared website checkpoints.</p>
               </div>
             </article>
           </div>
@@ -255,19 +254,22 @@
                 <option value="100">Epoch 100</option>
                 <option value="200">Epoch 200</option>
               </select>
-              <div class="option-list">
-                <label><input id="wfm-use-gan" type="checkbox" checked /> Use GAN loss</label>
-                <label><input id="wfm-use-l1" type="checkbox" checked /> Use L1 reconstruction loss</label>
-                <label><input id="wfm-no-checkpoints" type="checkbox" /> Train without fixed visual checkpoints</label>
+              <div class="check-box">
+                <strong>Fixed online configuration</strong>
+                <p>The prepared epoch 20, 100, and 200 results all use the same GAN + L1 objective. Only the checkpoint epoch changes.</p>
               </div>
               <button class="secondary-action" id="load-wfm-saved">Load saved checkpoint</button>
               <div class="advanced-local">
                 <div>
                   <strong>Advanced local training</strong>
                   <p id="wfm-backend-status">Checking local backend...</p>
+                  <label class="toggle-line"><input id="wfm-use-l1" type="checkbox" checked /> Local run: include L1 reconstruction loss</label>
                 </div>
                 <button class="primary-action" id="run-wfm-training">Run local training</button>
               </div>
+              <input id="wfm-use-gan" type="checkbox" checked hidden />
+              <input id="wfm-no-checkpoints" type="checkbox" hidden />
+              <p class="small-note">The local code can test other loss weights and split strategies as separate experiments; those runs are not represented by the three online images.</p>
             </article>
             <article class="lesson-panel training-output">
               <h2>Experiment Observation</h2>
@@ -504,7 +506,7 @@
               <div class="module-flow">
                 <div><strong>Input</strong><span>Fixed-length ECG waveform segment</span></div>
                 <div><strong>Target</strong><span>AAMI-style beat class such as N, SVEB, VEB, F, or Q</span></div>
-                <div><strong>Model</strong><span>1D CNN, LSTM, or CNN-LSTM</span></div>
+                <div><strong>Guided model</strong><span>1D CNN with prepared checkpoints</span></div>
                 <div><strong>Question</strong><span>Can the model generalize to unseen patient records?</span></div>
               </div>
               <div class="check-box">
@@ -536,16 +538,16 @@
             <article class="lesson-panel">
               <h2>Data Audit Before Training</h2>
               <p>
-                The dataset is made from beat-level ECG segments. Before choosing a model, students must
-                check whether the split tests true generalization, whether rare arrhythmias are represented,
-                and whether the label distribution makes accuracy misleading.
+                The prepared website checkpoints use synthetic beat-level ECG teaching segments. Students
+                should still ask whether rare patterns are represented and whether accuracy hides class-level
+                failures.
               </p>
-              <div class="option-list">
-                <label><input type="radio" name="ecg-split" value="record" checked /> Record-wise split</label>
-                <label><input type="radio" name="ecg-split" value="random" /> Random beat-level split</label>
+              <div class="check-box">
+                <strong>Guided checkpoint split</strong>
+                <p>One fixed random held-out split is used for every online epoch, so the checkpoint comparison is controlled but does not demonstrate generalization to unseen patients.</p>
               </div>
               <p id="split-explanation">
-                Record-wise split is harder because test records are unseen during training, but it is a better generalization test.
+                For real MIT-BIH experiments, a record-wise split is the stronger test because beats from a held-out patient record cannot leak into training.
               </p>
               <div class="data-cards">
                 <div><strong>Leakage risk</strong><p>Random beat splits may place similar beats from the same record in both train and test.</p></div>
@@ -569,33 +571,42 @@
         <div class="lab-step" data-panel="ecg-train">
           <div class="content-grid three-col">
             <article class="lesson-panel">
-              <h2>Choose Model</h2>
+              <h2>Guided Online Model</h2>
               <div class="option-list">
-                <label><input type="radio" name="ecg-model" value="cnn" checked /> 1D CNN</label>
-                <label><input type="radio" name="ecg-model" value="lstm" /> LSTM</label>
-                <label><input type="radio" name="ecg-model" value="cnnlstm" /> CNN-LSTM</label>
+                <label><input type="radio" name="ecg-model" value="cnn" checked disabled /> 1D CNN</label>
               </div>
               <div class="check-box">
                 <strong>Model logic</strong>
-                <p>1D CNNs detect local morphology such as peaks and slopes. LSTM-style models focus on temporal order. CNN-LSTM combines local feature extraction with sequence modeling.</p>
+                <p>The prepared online checkpoints use a 1D CNN that learns local waveform morphology such as peaks, slopes, and QRS-like patterns.</p>
+              </div>
+              <div class="check-box">
+                <strong>Optional local mini-project extension</strong>
+                <p>LSTM and CNN-LSTM are comparison ideas for students working with the GitHub code. The website does not currently provide trained online checkpoints for those models.</p>
               </div>
             </article>
             <article class="lesson-panel">
               <h2>Training Options</h2>
               <label class="slider-label" for="ecg-epochs">Saved checkpoint <strong id="ecg-epoch-label">Epoch 4</strong></label>
               <input id="ecg-epochs" type="range" min="0" max="5" value="2" step="1" />
-              <label class="toggle-line"><input id="class-weighting" type="checkbox" checked /> Use class weighting</label>
               <p class="small-note">
-                The online checkpoints use one fixed teaching dataset, split, 1D CNN, and class weighting so epoch is the only changing variable. More epochs are not automatically better; compare validation behavior and held-out errors.
+                The online checkpoints use one synthetic teaching dataset, fixed random held-out split, 1D CNN, and inverse-frequency class weighting. Epoch is the only changing variable.
               </p>
               <button class="secondary-action" id="load-ecg-saved">Load saved experiment</button>
               <div class="advanced-local">
                 <div>
                   <strong>Advanced local training</strong>
                   <p id="ecg-backend-status">Checking local backend...</p>
+                  <label class="toggle-line"><input id="class-weighting" type="checkbox" checked /> Local run: use class weighting</label>
+                  <div class="option-list">
+                    <label><input type="radio" name="ecg-split" value="record" checked /> Local run: record-wise split</label>
+                    <label><input type="radio" name="ecg-split" value="random" /> Local run: random beat-level split</label>
+                  </div>
                 </div>
                 <button class="primary-action" id="run-ecg-training">Run local training</button>
               </div>
+              <p class="small-note">
+                The local baseline retrains the 1D CNN. Comparing an LSTM or CNN-LSTM requires the mini-project code path and should be reported as a separate experiment.
+              </p>
             </article>
             <article class="lesson-panel training-output">
               <h2>Training Log</h2>
@@ -617,7 +628,7 @@
               </div>
               <div class="run-summary" id="ecg-run-summary">
                 <strong>Waiting for training</strong>
-                <p>Go to Train, choose a model and settings, then run the guided training simulation.</p>
+                <p>Go to Train, choose a saved CNN epoch, and load its held-out teaching result.</p>
               </div>
               <div class="metric-toggle" role="group" aria-label="Metric explanation">
                 <button class="metric-button active" data-metric="accuracy">Accuracy</button>
@@ -934,10 +945,14 @@
               </div>
             </article>
             <article class="lesson-panel">
-              <h2>Choose a Real Checkpoint</h2>
-              <div class="option-list">
-                <label><input type="radio" name="motion-model" value="gru" checked /> Bidirectional GRU</label>
-                <label><input type="radio" name="motion-model" value="graph" disabled /> Skeleton graph model (future device data)</label>
+              <h2>Guided Online Model</h2>
+              <div class="check-box">
+                <strong>Bidirectional GRU</strong>
+                <p>Every saved epoch comes from the same GRU training run on UniMiB-SHAR tri-axial accelerometer windows.</p>
+              </div>
+              <div class="check-box">
+                <strong>Future device-data extension</strong>
+                <p>A skeleton graph or device-specific sequence model can be evaluated after sufficient approved, labeled HoloMotion data are available. No such online checkpoint is currently provided.</p>
               </div>
               <label class="slider-label" for="motion-epochs">Saved epoch <strong id="motion-epoch-label">5</strong></label>
               <input id="motion-epochs" type="range" min="5" max="30" value="5" step="5" />
@@ -962,7 +977,7 @@
               </div>
               <div class="run-summary" id="motion-run-summary">
                 <strong>Waiting for training</strong>
-                <p>Go to Train, choose a task and model, then run the prototype training simulation.</p>
+                <p>Go to Train, choose a saved GRU epoch, and load its held-out result.</p>
               </div>
               <div class="motion-metrics">
                 <div><span>Accuracy</span><strong id="motion-accuracy">--</strong></div>
@@ -2123,6 +2138,6 @@
 
     <script src="deploy-config.js?v=20260708"></script>
     <script src="study-config.js?v=20260728m8"></script>
-    <script src="app.js?v=20260729m1"></script>
+    <script src="app.js?v=20260730m1"></script>
   </body>
 </html>

@@ -922,10 +922,7 @@ const wfmEpochs = document.querySelector("#wfm-epochs");
 
 document.querySelector("#load-wfm-saved").addEventListener("click", () => {
   const epochs = Number(wfmEpochs.value);
-  const useGan = document.querySelector("#wfm-use-gan").checked;
-  const useL1 = document.querySelector("#wfm-use-l1").checked;
-  const noCheckpoints = document.querySelector("#wfm-no-checkpoints").checked;
-  runGuidedWfmTraining({ epochs, useGan, useL1, noCheckpoints });
+  runGuidedWfmTraining({ epochs, useGan: true, useL1: true, noCheckpoints: false });
 });
 
 document.querySelector("#run-wfm-training").addEventListener("click", () => {
@@ -1091,16 +1088,6 @@ document.querySelector("#waveform-select").addEventListener("change", (event) =>
   image.alt = waveform.alt;
 });
 
-document.querySelectorAll('input[name="ecg-split"]').forEach((radio) => {
-  radio.addEventListener("change", () => {
-    const split = document.querySelector('input[name="ecg-split"]:checked').value;
-    document.querySelector("#split-explanation").textContent =
-      split === "record"
-        ? "Record-wise split is harder because test records are unseen during training, but it is a better generalization test."
-        : "Random beat-level split may produce higher scores because similar beats from the same record can appear in both training and testing.";
-  });
-});
-
 const ecgEpochs = document.querySelector("#ecg-epochs");
 const ecgCheckpointEpochs = [1, 3, 4, 5, 6, 10];
 function selectedEcgEpoch() {
@@ -1113,8 +1100,7 @@ ecgEpochs.addEventListener("input", () => {
 document.querySelector("#load-ecg-saved").addEventListener("click", () => {
   const model = document.querySelector('input[name="ecg-model"]:checked').value;
   const epochs = selectedEcgEpoch();
-  const weighting = document.querySelector("#class-weighting").checked;
-  runGuidedEcgTraining({ model, epochs, weighting });
+  runGuidedEcgTraining({ model, epochs, weighting: true });
 });
 
 document.querySelector("#run-ecg-training").addEventListener("click", () => {
@@ -1139,7 +1125,7 @@ function runGuidedEcgTraining({ model, epochs, weighting }) {
 
   if (model !== "cnn" || !weighting) {
     copy.textContent =
-      "The online epoch series holds architecture and loss settings fixed: choose 1D CNN with class weighting. Other settings remain available for local training.";
+      "The guided online checkpoint series is fixed to the trained 1D CNN with class weighting. LSTM and CNN-LSTM are optional local mini-project comparisons and do not have online checkpoints.";
     return;
   }
 
