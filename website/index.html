@@ -43,9 +43,9 @@
             <span class="reference-tag">Required before entering a module</span>
             <h2 id="start-gate-title">Begin with a private participation record</h2>
             <p>
-              The pilot records module visits, pre/post checks, quiz attempts, and reflections
-              that you explicitly save under an anonymous participant ID. It does not ask for
-              your name, email, or OSU username.
+              The pilot records module visits, pre/post checks, quiz attempts, saved reflections,
+              and a short exit survey under an anonymous participant ID. It does not ask for your
+              name, email, or OSU username.
             </p>
             <label class="toggle-line start-consent-line">
               <input id="start-consent" type="checkbox" />
@@ -78,10 +78,30 @@
             <div><span>2</span><strong>Prepare</strong><p>Inspect data type, labels, and split.</p></div>
             <div><span>3</span><strong>Train</strong><p>Set model options and watch training behavior.</p></div>
             <div><span>4</span><strong>Test</strong><p>Evaluate unseen examples and compare metrics.</p></div>
-            <div><span>5</span><strong>Quiz</strong><p>Check concepts, metrics, and failure modes.</p></div>
-            <div><span>6</span><strong>Project</strong><p>Modify code, test settings, and write a mini-report.</p></div>
+            <div><span>5</span><strong>Reflect</strong><p>Explain the result and its limitations.</p></div>
+            <div><span>6</span><strong>Quiz</strong><p>Check concepts, metrics, and failure modes.</p></div>
+            <div><span>7</span><strong>Project</strong><p>Modify code, test settings, and write a mini-report.</p></div>
+            <div><span>8</span><strong>Finish</strong><p>Complete the post-check and exit survey.</p></div>
           </div>
         </div>
+
+        <section class="start-guidance" aria-labelledby="start-guidance-title">
+          <div>
+            <span class="reference-tag">Before choosing a module</span>
+            <h2 id="start-guidance-title">What students need and what runs online</h2>
+            <p>
+              The website is designed for introductory ML learners who can read basic graphs and
+              metrics. Programming is optional for the guided route; Python is needed for the local
+              mini-project extension.
+            </p>
+          </div>
+          <div class="guidance-grid">
+            <div><strong>45-90 minutes</strong><span>Estimated guided time per module.</span></div>
+            <div><strong>Saved experiments</strong><span>The online Train pages load real prepared checkpoints; they do not retrain large models in the browser.</span></div>
+            <div><strong>Local extension</strong><span>GitHub code supports full training, changed settings, and reproducible mini-project work.</span></div>
+            <div><strong>Completion evidence</strong><span>Pre/post checks, quiz, reflection, and exit survey form the guided completion record.</span></div>
+          </div>
+        </section>
 
         <div class="choice-grid" aria-label="Available modules">
           <article class="choice-card">
@@ -123,6 +143,11 @@
             </p>
           </div>
           <div class="status-pill">Guided lab</div>
+        </div>
+        <div class="module-meta-strip">
+          <div><span>Estimated time</span><strong>45-60 min</strong></div>
+          <div><span>Preparation</span><strong>Image tensors and train/test split</strong></div>
+          <div><span>Online training</span><strong>Prepared GAN checkpoints</strong></div>
         </div>
 
         <div class="lab-tabs" role="tablist" aria-label="WFM learning steps">
@@ -450,6 +475,11 @@
             </p>
           </div>
           <div class="status-pill">Interactive study</div>
+        </div>
+        <div class="module-meta-strip">
+          <div><span>Estimated time</span><strong>45-60 min</strong></div>
+          <div><span>Preparation</span><strong>Waveforms and classification metrics</strong></div>
+          <div><span>Online training</span><strong>Prepared CNN checkpoints</strong></div>
         </div>
 
         <div class="lab-tabs" role="tablist" aria-label="ECG learning steps">
@@ -793,6 +823,11 @@
           </div>
           <div class="status-pill">Public data + real-device case</div>
         </div>
+        <div class="module-meta-strip">
+          <div><span>Estimated time</span><strong>50-70 min</strong></div>
+          <div><span>Current training data</span><strong>UniMiB-SHAR accelerometer windows</strong></div>
+          <div><span>Online training</span><strong>Prepared GRU checkpoints</strong></div>
+        </div>
 
         <div class="lab-tabs" role="tablist" aria-label="Motion learning steps">
           <button class="lab-tab active" data-module="motion" data-step="learn">Learn</button>
@@ -817,6 +852,10 @@
                 <strong>Before you train</strong>
                 <p>Which is more useful for an RNN: one posture snapshot, or a time-ordered movement sequence?</p>
               </div>
+              <div class="boundary-note">
+                <strong>Current implementation</strong>
+                <p>The trained website model uses labeled UniMiB-SHAR tri-axial accelerometer windows. HoloMotion is currently an interpretation and domain-gap case study, not the source of these training labels.</p>
+              </div>
             </article>
             <article class="lesson-panel">
               <h2>Why a Sequence Model Fits</h2>
@@ -829,6 +868,10 @@
                   <strong>Holomotion case study</strong>
                   <p>Uses real device outputs such as walking speed, step time, joint range of motion, trunk/pelvis stability, and asymmetry.</p>
                 </div>
+              </div>
+              <div class="boundary-note future-note">
+                <strong>Future device-data route</strong>
+                <p>After enough approved, labeled HoloMotion records are available, a device-specific sequence model can be trained and compared with the public-data GRU. Students could then evaluate de-identified compatible exports locally; fine-tuning would require sufficient labels and a defined validation protocol.</p>
               </div>
             </article>
           </div>
@@ -1209,6 +1252,11 @@
           </div>
           <div class="status-pill">Inverse sensing module</div>
         </div>
+        <div class="module-meta-strip">
+          <div><span>Estimated time</span><strong>60-90 min</strong></div>
+          <div><span>Preparation</span><strong>Ohm's law, KCL, regression</strong></div>
+          <div><span>Evidence boundary</span><strong>Simulator-domain validation</strong></div>
+        </div>
 
         <div class="lab-tabs" role="tablist" aria-label="Resistance learning steps">
           <button class="lab-tab active" data-module="resistance" data-step="learn">Learn</button>
@@ -1235,6 +1283,10 @@
               <div class="check-box">
                 <strong>Before you train</strong>
                 <p>If two different resistance maps create similar current measurements, what extra measurement or validation data would help separate them?</p>
+              </div>
+              <div class="boundary-note">
+                <strong>Current evidence boundary</strong>
+                <p>The reported reconstruction metrics are held-out tests inside the simulated DC domain. Agreement between the reference solver and MNA checks equation implementation; it is not proof that either solver reproduces the physical sensor. Hardware validation still needs measured currents and reference resistance or imaging data.</p>
               </div>
             </article>
             <article class="lesson-panel">
@@ -1684,8 +1736,10 @@
                 <tr><td>Data</td><td>Inspect input shape, label meaning, split strategy, and bias risk.</td></tr>
                 <tr><td>Train</td><td>Change settings and observe training behavior.</td></tr>
                 <tr><td>Test</td><td>Evaluate held-out examples and identify failure patterns.</td></tr>
+                <tr><td>Reflect</td><td>Explain what the result means and state one limitation.</td></tr>
                 <tr><td>Quiz</td><td>Answer concept, metric, and limitation questions.</td></tr>
                 <tr><td>Project</td><td>Run code locally, modify one setting, and write a mini-report.</td></tr>
+                <tr><td>Exit Survey</td><td>Rate usefulness and identify what helped, confused, or should improve.</td></tr>
               </tbody>
             </table>
           </article>
@@ -1706,22 +1760,44 @@
               <div><strong>1. Access</strong><span>Review the pilot notice, consent, and create an anonymous participation session before opening a module.</span></div>
               <div><strong>2. Predict</strong><span>Answer a prompt before revealing the saved model result.</span></div>
               <div><strong>3. Investigate</strong><span>Change guided settings, compare cases, and inspect metrics or error maps.</span></div>
-              <div><strong>4. Assess</strong><span>Complete the quiz, reflection, and mini-project report for the selected module.</span></div>
+              <div><strong>4. Assess</strong><span>Complete the quiz, reflection, post-check, and exit survey for the selected module.</span></div>
             </div>
           </article>
           <article class="lesson-panel">
             <h2>Learning Evidence and Platform Boundary</h2>
             <table class="reference-table">
               <tbody>
-                <tr><th>Available now</th><td>Guided activities, quizzes, reflection prompts, saved experiments, code links, and mini-project templates.</td></tr>
-                <tr><th>Student evidence</th><td>Each module now includes matched pre/post concept and confidence checks. Results remain in the student's browser by default.</td></tr>
-                <tr><th>Local record</th><td>A random participation code, module visits, and assessment summaries are stored on the current device. Selected motion files are parsed locally and are not uploaded.</td></tr>
-                <tr><th>Approved extension</th><td>The included Supabase configuration can enable anonymous Auth, de-identified usage counts, and assessment export after consent and institutional review.</td></tr>
+                <tr><th>Available now</th><td>Guided activities, saved checkpoints, quizzes, reflections, exit surveys, code links, and mini-project templates.</td></tr>
+                <tr><th>Student evidence</th><td>Matched pre/post concept checks, quiz attempts, reflections, survey ratings, module visits, and guided completion status.</td></tr>
+                <tr><th>Central record</th><td>After consent, de-identified records are linked to an anonymous ID in the pilot database. Selected motion files are parsed locally and are not uploaded.</td></tr>
+                <tr><th>Not yet implemented</th><td>Named accounts, report upload, instructor feedback, course grading, and completion certificates.</td></tr>
               </tbody>
             </table>
             <div class="boundary-note">
               <strong>Privacy and accessibility</strong>
-              <p>Any formal student-data collection should be reviewed for accessibility, privacy, consent, and applicable research or course requirements before deployment.</p>
+              <p>Only project administrators should access pilot records. A formal retention and deletion period still requires project approval. Keyboard navigation, labels, contrast, captions, transcripts, screen-reader testing, and a full accessibility review should be checked before formal course or research use.</p>
+            </div>
+          </article>
+          <article class="lesson-panel">
+            <h2>Suggested Mini-Project Rubric</h2>
+            <table class="reference-table">
+              <tbody>
+                <tr><th>Problem and data definition</th><td>20%</td></tr>
+                <tr><th>Reproducible experiment</th><td>25%</td></tr>
+                <tr><th>Metrics and visualization</th><td>20%</td></tr>
+                <tr><th>Interpretation and limitations</th><td>25%</td></tr>
+                <tr><th>Code/report clarity</th><td>10%</td></tr>
+              </tbody>
+            </table>
+            <p>The rubric rewards scientific reasoning and reproducibility, not only the highest model score.</p>
+          </article>
+          <article class="lesson-panel">
+            <h2>Current Pilot and Future Plan</h2>
+            <div class="participation-flow">
+              <div><strong>Current</strong><span>Anonymous consent, de-identified learning records, prepared model checkpoints, and local code extensions.</span></div>
+              <div><strong>Next</strong><span>OSU or passwordless accounts, mini-project submission, instructor feedback, and a student completion summary.</span></div>
+              <div><strong>Module 3</strong><span>Train and compare a HoloMotion-specific model after enough labeled and approved device data are available.</span></div>
+              <div><strong>Accessibility</strong><span>Add captioned tutorial video, transcript, formal keyboard/screen-reader checks, and documented support requirements.</span></div>
             </div>
           </article>
         </div>
@@ -1755,7 +1831,9 @@
               <div><span>Assessments completed</span><strong id="study-assessment-count">0</strong></div>
               <div><span>Quiz attempts</span><strong id="study-quiz-count">0</strong></div>
               <div><span>Reflections saved</span><strong id="study-reflection-count">0</strong></div>
+              <div><span>Exit surveys</span><strong id="study-feedback-count">0</strong></div>
               <div><span>Modules with pre + post</span><strong id="study-paired-count">0</strong></div>
+              <div><span>Guided modules completed</span><strong id="study-complete-count">0</strong></div>
               <div><span>Global participants</span><strong id="study-global-count">Not enabled</strong></div>
             </div>
             <p>
@@ -2045,6 +2123,6 @@
 
     <script src="deploy-config.js?v=20260708"></script>
     <script src="study-config.js?v=20260728m8"></script>
-    <script src="app.js?v=20260728m6"></script>
+    <script src="app.js?v=20260729m1"></script>
   </body>
 </html>

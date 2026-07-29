@@ -29,6 +29,8 @@ version. Do not drop tables after real participant collection has begun.
 - submitted pre/post concept score, confidence, and selected answer indices
 - every submitted quiz attempt, including score and per-question answers
 - the latest explicitly saved reflection for each participant and module
+- one exit-survey response per participant and module, including a usefulness
+  rating and optional comments about helpful, difficult, and improvable parts
 
 The website does not upload imported motion files, unsaved draft reflections,
 names, email addresses, or OSU identifiers.
@@ -42,6 +44,7 @@ Use the Supabase table editor for detailed authorized review:
 - `assessment_responses`: pre/post learning records
 - `quiz_attempts`: every quiz score and per-question response
 - `reflections`: the latest saved reflection for each module
+- `experience_feedback`: each module's latest exit survey and usefulness rating
 
 The public website can call `public_participant_count()` but cannot select
 individual rows. Export or analyze individual records only from an authorized

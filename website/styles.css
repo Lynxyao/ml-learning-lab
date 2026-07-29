@@ -341,6 +341,53 @@ p {
   font-size: 14px;
 }
 
+.start-guidance {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.7fr) minmax(0, 1.3fr);
+  gap: 28px;
+  margin-top: 24px;
+  padding-block: 24px;
+  border-block: 1px solid var(--line);
+}
+
+.start-guidance h2 {
+  margin-top: 8px;
+  font-size: 26px;
+}
+
+.guidance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 1px solid var(--line);
+}
+
+.guidance-grid div {
+  min-width: 0;
+  padding: 16px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.guidance-grid div:nth-child(2n) {
+  border-right: 0;
+}
+
+.guidance-grid div:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+
+.guidance-grid strong,
+.guidance-grid span {
+  display: block;
+}
+
+.guidance-grid span {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .choice-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -385,6 +432,40 @@ p {
 .module-header p {
   max-width: 900px;
   font-size: 17px;
+}
+
+.module-meta-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: -4px 0 20px;
+  border-block: 1px solid var(--line);
+}
+
+.module-meta-strip div {
+  min-width: 0;
+  padding: 13px 16px;
+  border-right: 1px solid var(--line);
+}
+
+.module-meta-strip div:last-child {
+  border-right: 0;
+}
+
+.module-meta-strip span,
+.module-meta-strip strong {
+  display: block;
+}
+
+.module-meta-strip span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.module-meta-strip strong {
+  margin-top: 5px;
+  font-size: 14px;
 }
 
 .status-pill {
@@ -748,6 +829,108 @@ input[type="range"] {
   color: var(--accent-dark);
   font-size: 13px;
   font-weight: 700;
+}
+
+.exit-survey-panel label {
+  display: block;
+  margin-top: 14px;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.exit-survey-panel textarea {
+  width: 100%;
+  min-height: 86px;
+  margin-top: 7px;
+  padding: 11px 12px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.5;
+}
+
+.usefulness-rating {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.usefulness-rating label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 38px;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.survey-save-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.survey-save-status {
+  min-height: 22px;
+  margin: 0;
+  color: var(--accent-dark);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.completion-checklist {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  list-style: none;
+}
+
+.completion-checklist li {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.completion-checklist li:last-child {
+  border-bottom: 0;
+}
+
+.completion-checklist span {
+  color: #8c3c34;
+  font-weight: 800;
+}
+
+.completion-checklist .complete span {
+  color: var(--accent-dark);
+}
+
+.completion-callout {
+  margin-top: 16px;
+  padding: 14px;
+  border-left: 4px solid var(--accent);
+  background: #f2f7f4;
+}
+
+.completion-callout strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.completion-callout p {
+  margin: 0;
 }
 
 .motion-import-panel {
@@ -2107,7 +2290,8 @@ select {
   .experiment-knobs,
   .project-levels,
   .designer-grid,
-  .publication-steps {
+  .publication-steps,
+  .start-guidance {
     grid-template-columns: 1fr;
   }
 
@@ -2142,12 +2326,32 @@ select {
   .panel-heading,
   .research-banner,
   .assessment-heading,
-  .reflection-save-row {
+  .reflection-save-row,
+  .survey-save-row {
     display: block;
   }
 
-  .reflection-save-status {
+  .reflection-save-status,
+  .survey-save-status {
     margin-top: 10px;
+  }
+
+  .guidance-grid,
+  .module-meta-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .guidance-grid div,
+  .guidance-grid div:nth-child(2n),
+  .guidance-grid div:nth-last-child(-n + 2),
+  .module-meta-strip div {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .guidance-grid div:last-child,
+  .module-meta-strip div:last-child {
+    border-bottom: 0;
   }
 
   .assessment-heading .segment-row {

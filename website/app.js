@@ -115,6 +115,33 @@ const moduleAssessments = {
   },
 };
 
+const moduleGuidance = {
+  wfm: {
+    label: "Module 1 - Image-to-Image",
+    time: "45-60 minutes",
+    prerequisites: "Basic image concepts, train/test splits, and loss functions",
+    onlineMode: "Prepared checkpoints online; full GAN training in the local code environment",
+  },
+  ecg: {
+    label: "Module 2 - ECG Classification",
+    time: "45-60 minutes",
+    prerequisites: "Basic signal plots, classification, and accuracy",
+    onlineMode: "Prepared 1D CNN checkpoints online; full training in the local code environment",
+  },
+  motion: {
+    label: "Module 3 - Motion Analysis",
+    time: "50-70 minutes",
+    prerequisites: "Time-series windows, labels, and train/validation/test splits",
+    onlineMode: "Prepared UniMiB-SHAR GRU checkpoints; imported motion files are processed locally",
+  },
+  resistance: {
+    label: "Module 4 - Sensor Inversion",
+    time: "60-90 minutes",
+    prerequisites: "Ohm's law, basic KCL, regression error, and graph connections",
+    onlineMode: "Prepared 8x8 model results online; GPU training and MNA experiments run locally",
+  },
+};
+
 const studyStorageKey = "ml-learning-lab-study-v1";
 const studyConfig = window.STUDY_CONFIG || { enabled: false };
 const protectedStudyTargets = new Set(["wfm", "ecg", "motion", "resistance", "notebook"]);
@@ -133,6 +160,7 @@ function loadStudyState() {
       assessments: Array.isArray(saved.assessments) ? saved.assessments : [],
       quizAttempts: Array.isArray(saved.quizAttempts) ? saved.quizAttempts : [],
       reflections: saved.reflections && typeof saved.reflections === "object" ? saved.reflections : {},
+      feedback: saved.feedback && typeof saved.feedback === "object" ? saved.feedback : {},
     };
   } catch {
     return {
@@ -143,6 +171,7 @@ function loadStudyState() {
       assessments: [],
       quizAttempts: [],
       reflections: {},
+      feedback: {},
     };
   }
 }
@@ -210,6 +239,26 @@ function assessmentRecord(moduleName, phase) {
     .find((record) => record.module === moduleName && record.phase === phase);
 }
 
+function latestQuizAttempt(moduleName) {
+  return [...studyState.quizAttempts]
+    .reverse()
+    .find((record) => record.module === moduleName);
+}
+
+function moduleCompletion(moduleName) {
+  const checks = {
+    pre: Boolean(assessmentRecord(moduleName, "pre")),
+    quiz: Boolean(latestQuizAttempt(moduleName)),
+    reflection: Boolean(studyState.reflections[moduleName]),
+    post: Boolean(assessmentRecord(moduleName, "post")),
+    feedback: Boolean(studyState.feedback[moduleName]),
+  };
+  return {
+    checks,
+    complete: Object.values(checks).every(Boolean),
+  };
+}
+
 function renderAssessments() {
   Object.entries(moduleAssessments).forEach(([moduleName, assessment]) => {
     const moduleSection = document.querySelector(`#${moduleName}`);
@@ -221,6 +270,169 @@ function renderAssessments() {
     moduleHeader.insertAdjacentElement("afterend", panel);
     renderAssessmentPhase(moduleName, "pre");
   });
+}
+
+function renderExitSurveys() {
+  Object.keys(moduleAssessments).forEach((moduleName) => {
+    const moduleSection = document.querySelector(`#${moduleName}`);
+    const tabList = moduleSection?.querySelector(".lab-tabs");
+    if (!moduleSection || !tabList) return;
+
+    const surveyTab = document.createElement("button");
+    surveyTab.className = "lab-tab";
+    surveyTab.type = "button";
+    surveyTab.dataset.module = moduleName;
+    surveyTab.dataset.step = "survey";
+    surveyTab.textContent = "Exit Survey";
+    tabList.append(surveyTab);
+
+    const surveyPanel = document.createElement("div");
+    surveyPanel.className = "lab-step";
+    surveyPanel.dataset.panel = `${moduleName}-survey`;
+    surveyPanel.dataset.exitSurvey = moduleName;
+    moduleSection.append(surveyPanel);
+    renderExitSurvey(moduleName);
+  });
+}
+
+function renderExitSurvey(moduleName) {
+  const panel = document.querySelector(`[data-exit-survey="${moduleName}"]`);
+  if (!panel) return;
+  const saved = studyState.feedback[moduleName];
+  const completion = moduleCompletion(moduleName);
+  const checkItems = [
+    ["pre", "Pre-assessment"],
+    ["quiz", "Quiz attempt"],
+    ["reflection", "Saved reflection"],
+    ["post", "Post-assessment"],
+    ["feedback", "Exit survey"],
+  ];
+
+  panel.innerHTML = `
+    <div class="content-grid two-col">
+      <article class="lesson-panel exit-survey-panel">
+        <span class="reference-tag">Anonymous learning-experience feedback</span>
+        <h2>${moduleGuidance[moduleName].label}: Exit Survey</h2>
+        <p>
+          Tell us what supported or limited your learning. The three written responses are optional;
+          the usefulness rating is required. Do not include names, medical details, or identifiable data.
+        </p>
+        <label>
+          <strong>Which part was most helpful?</strong>
+          <textarea data-feedback-field="helpful" maxlength="2000" placeholder="Name the activity, explanation, visualization, or comparison that helped most."></textarea>
+        </label>
+        <label>
+          <strong>Which part was difficult or unclear?</strong>
+          <textarea data-feedback-field="difficult" maxlength="2000" placeholder="Describe one concept, instruction, result, or interface element that was unclear."></textarea>
+        </label>
+        <label>
+          <strong>What should be improved?</strong>
+          <textarea data-feedback-field="improvement" maxlength="2000" placeholder="Suggest one change that would improve the module or learning experience."></textarea>
+        </label>
+        <fieldset class="usefulness-rating">
+          <legend>Overall usefulness rating</legend>
+          <div class="confidence-scale">
+            ${[1, 2, 3, 4, 5]
+              .map(
+                (value) =>
+                  `<label><input type="radio" name="${moduleName}-usefulness" value="${value}" />${value}</label>`
+              )
+              .join("")}
+          </div>
+          <span>1 = not useful, 5 = very useful</span>
+        </fieldset>
+        <div class="survey-save-row">
+          <button class="primary-button" type="button" data-save-feedback>Save Exit Survey</button>
+          <p class="survey-save-status" aria-live="polite">${
+            saved ? `Saved earlier with a ${saved.rating}/5 usefulness rating.` : "Not submitted yet."
+          }</p>
+        </div>
+      </article>
+      <article class="lesson-panel completion-panel">
+        <span class="reference-tag">Guided learning completion</span>
+        <h2>Module Completion Summary</h2>
+        <p>
+          Complete all five evidence items below. The mini-project remains a separate report until
+          online report submission and instructor feedback are added.
+        </p>
+        <ul class="completion-checklist">
+          ${checkItems
+            .map(
+              ([key, label]) =>
+                `<li class="${completion.checks[key] ? "complete" : ""}"><span aria-hidden="true">${
+                  completion.checks[key] ? "Done" : "Open"
+                }</span><strong>${label}</strong></li>`
+            )
+            .join("")}
+        </ul>
+        <div class="completion-callout ${completion.complete ? "complete" : ""}">
+          <strong>${completion.complete ? "Guided module complete" : "Guided module in progress"}</strong>
+          <p>${
+            completion.complete
+              ? "Your learning evidence is complete. Continue to the mini-project to apply the workflow independently."
+              : "Return to the open items, then revisit this summary."
+          }</p>
+        </div>
+      </article>
+    </div>
+  `;
+
+  if (saved) {
+    panel.querySelector('[data-feedback-field="helpful"]').value = saved.helpful || "";
+    panel.querySelector('[data-feedback-field="difficult"]').value = saved.difficult || "";
+    panel.querySelector('[data-feedback-field="improvement"]').value = saved.improvement || "";
+    const rating = panel.querySelector(`input[name="${moduleName}-usefulness"][value="${saved.rating}"]`);
+    if (rating) rating.checked = true;
+  }
+
+  panel.querySelector("[data-save-feedback]").addEventListener("click", () =>
+    submitExitSurvey(moduleName)
+  );
+}
+
+async function submitExitSurvey(moduleName) {
+  const panel = document.querySelector(`[data-exit-survey="${moduleName}"]`);
+  if (!panel) return;
+  const rating = panel.querySelector(`input[name="${moduleName}-usefulness"]:checked`);
+  const status = panel.querySelector(".survey-save-status");
+  if (!rating) {
+    status.textContent = "Select a usefulness rating from 1 to 5.";
+    return;
+  }
+
+  const feedback = {
+    module: moduleName,
+    helpful: panel.querySelector('[data-feedback-field="helpful"]').value.trim().slice(0, 2000),
+    difficult: panel.querySelector('[data-feedback-field="difficult"]').value.trim().slice(0, 2000),
+    improvement: panel.querySelector('[data-feedback-field="improvement"]').value.trim().slice(0, 2000),
+    rating: Number(rating.value),
+    updatedAt: new Date().toISOString(),
+  };
+  studyState.feedback[moduleName] = feedback;
+  saveStudyState();
+
+  const synced = await syncStudyRecord(
+    "experience_feedback",
+    {
+      module: moduleName,
+      helpful_text: feedback.helpful,
+      difficult_text: feedback.difficult,
+      improvement_text: feedback.improvement,
+      usefulness_rating: feedback.rating,
+      updated_at: feedback.updatedAt,
+    },
+    { upsert: true, onConflict: "participant_id,module" }
+  );
+
+  renderExitSurvey(moduleName);
+  const nextStatus = document.querySelector(
+    `[data-exit-survey="${moduleName}"] .survey-save-status`
+  );
+  nextStatus.textContent = studyBackendEnabled()
+    ? synced
+      ? `Saved to the pilot record: usefulness ${feedback.rating}/5.`
+      : "Saved on this device; backend sync is currently unavailable."
+    : `Saved on this device: usefulness ${feedback.rating}/5. Connect Supabase for central review.`;
 }
 
 function renderAssessmentPhase(moduleName, phase) {
@@ -325,6 +537,8 @@ function submitAssessment(moduleName, phase) {
   result.textContent = pre
     ? `Saved: ${score}/${assessment.questions.length}, confidence ${record.confidence}/5. Change from pre: ${score - pre.score >= 0 ? "+" : ""}${score - pre.score} concepts and ${record.confidence - pre.confidence >= 0 ? "+" : ""}${record.confidence - pre.confidence} confidence.`
     : `Saved: ${score}/${assessment.questions.length} concepts, confidence ${record.confidence}/5. Complete the post-assessment after the module.`;
+  renderExitSurvey(moduleName);
+  updateStudyDashboard();
 }
 
 function recordModuleVisit(moduleName) {
@@ -350,10 +564,21 @@ function updateStudyDashboard() {
   document.querySelector("#study-quiz-count").textContent = String(studyState.quizAttempts.length);
   document.querySelector("#study-reflection-count").textContent =
     String(Object.keys(studyState.reflections).length);
+  const feedbackCount = document.querySelector("#study-feedback-count");
+  if (feedbackCount) {
+    feedbackCount.textContent = String(Object.keys(studyState.feedback).length);
+  }
   const paired = Object.keys(moduleAssessments).filter(
     (moduleName) => assessmentRecord(moduleName, "pre") && assessmentRecord(moduleName, "post")
   ).length;
   document.querySelector("#study-paired-count").textContent = String(paired);
+  const completeCount = document.querySelector("#study-complete-count");
+  if (completeCount) {
+    completeCount.textContent = String(
+      Object.keys(moduleAssessments).filter((moduleName) => moduleCompletion(moduleName).complete)
+        .length
+    );
+  }
 }
 
 async function refreshGlobalParticipantCount() {
@@ -417,6 +642,7 @@ async function syncStudyRecord(table, payload, options = {}) {
 }
 
 renderAssessments();
+renderExitSurveys();
 updateStudyDashboard();
 updateAccessGate();
 const studyBackendReady = initializeStudyBackend();
@@ -614,6 +840,8 @@ function checkQuiz(quiz) {
     answers: attempt.answers,
   });
   summary.textContent += " This attempt has been recorded.";
+  renderExitSurvey(attempt.module);
+  updateStudyDashboard();
 }
 
 function resetQuiz(quiz) {
@@ -1919,6 +2147,8 @@ Object.entries(reflectionFields).forEach(([moduleName, selector]) => {
         ? `Saved to the pilot record: ${wordCount} words.`
         : "Saved on this device; backend sync is currently unavailable."
       : `Saved on this device: ${wordCount} words. Connect Supabase for central review.`;
+    renderExitSurvey(moduleName);
+    updateStudyDashboard();
   });
 });
 

@@ -58,17 +58,33 @@ create table if not exists public.reflections (
   constraint reflection_identity_matches check (participant_id = user_id)
 );
 
+create table if not exists public.experience_feedback (
+  participant_id uuid not null references public.participants(participant_id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  module text not null check (module in ('wfm', 'ecg', 'motion', 'resistance')),
+  helpful_text text not null default '' check (char_length(helpful_text) <= 2000),
+  difficult_text text not null default '' check (char_length(difficult_text) <= 2000),
+  improvement_text text not null default '' check (char_length(improvement_text) <= 2000),
+  usefulness_rating integer not null check (usefulness_rating between 1 and 5),
+  updated_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  primary key (participant_id, module),
+  constraint feedback_identity_matches check (participant_id = user_id)
+);
+
 alter table public.participants enable row level security;
 alter table public.usage_events enable row level security;
 alter table public.assessment_responses enable row level security;
 alter table public.quiz_attempts enable row level security;
 alter table public.reflections enable row level security;
+alter table public.experience_feedback enable row level security;
 
 grant select, insert, update on public.participants to authenticated;
 grant insert on public.usage_events to authenticated;
 grant insert on public.assessment_responses to authenticated;
 grant insert on public.quiz_attempts to authenticated;
 grant select, insert, update on public.reflections to authenticated;
+grant select, insert, update on public.experience_feedback to authenticated;
 grant usage, select on all sequences in schema public to authenticated;
 
 drop policy if exists "participant can create own record" on public.participants;
@@ -125,6 +141,25 @@ using (user_id = auth.uid());
 drop policy if exists "participant can update own reflection" on public.reflections;
 create policy "participant can update own reflection"
 on public.reflections for update
+to authenticated
+using (user_id = auth.uid())
+with check (user_id = auth.uid() and participant_id = auth.uid());
+
+drop policy if exists "participant can create own feedback" on public.experience_feedback;
+create policy "participant can create own feedback"
+on public.experience_feedback for insert
+to authenticated
+with check (user_id = auth.uid() and participant_id = auth.uid());
+
+drop policy if exists "participant can read own feedback" on public.experience_feedback;
+create policy "participant can read own feedback"
+on public.experience_feedback for select
+to authenticated
+using (user_id = auth.uid());
+
+drop policy if exists "participant can update own feedback" on public.experience_feedback;
+create policy "participant can update own feedback"
+on public.experience_feedback for update
 to authenticated
 using (user_id = auth.uid())
 with check (user_id = auth.uid() and participant_id = auth.uid());

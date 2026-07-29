@@ -4,7 +4,8 @@ select
   (select count(*) from public.usage_events) as module_views,
   (select count(*) from public.assessment_responses) as pre_post_submissions,
   (select count(*) from public.quiz_attempts) as quiz_attempts,
-  (select count(*) from public.reflections) as saved_reflections;
+  (select count(*) from public.reflections) as saved_reflections,
+  (select count(*) from public.experience_feedback) as exit_surveys;
 
 -- Module engagement
 select
@@ -73,4 +74,24 @@ select
   response_text,
   updated_at
 from public.reflections
+order by updated_at desc;
+
+-- Exit-survey usefulness and qualitative feedback by module
+select
+  module,
+  count(*) as responses,
+  round(avg(usefulness_rating), 2) as mean_usefulness_rating
+from public.experience_feedback
+group by module
+order by module;
+
+select
+  upper(left(participant_id::text, 8)) as participant_code,
+  module,
+  usefulness_rating,
+  helpful_text,
+  difficult_text,
+  improvement_text,
+  updated_at
+from public.experience_feedback
 order by updated_at desc;
